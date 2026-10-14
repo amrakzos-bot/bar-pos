@@ -1,0 +1,40 @@
+{
+  "name": "bar-restaurant-pos",
+  "version": "1.0.1",
+  "description": "Bar & Restaurant Lounge POS",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "dist-installer": "electron-builder --win nsis",
+    "publish": "electron-builder --win nsis --publish always"
+  },
+  "author": "Your Company",
+  "license": "ISC",
+  "devDependencies": {
+    "electron": "^28.0.0",
+    "electron-builder": "^24.9.1"
+  },
+  "dependencies": {
+    "electron-updater": "^6.1.7"
+  },
+  "build": {
+    "appId": "com.barlounge.pos",
+    "productName": "Bar & Restaurant Lounge POS",
+    "directories": {
+      "output": "dist"
+    },
+    "win": {
+      "target": "nsis"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true
+    },
+    "publish": {
+      "provider": "github",
+      "owner": "YOUR_GITHUB_USERNAME",
+      "repo": "bar-pos-releases"
+    }
+  }
+}

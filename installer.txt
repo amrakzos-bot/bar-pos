@@ -1,0 +1,60 @@
+; ==========================================
+; Pub POS - Custom Installer Script
+; ==========================================
+
+!include "MUI2.nsh"
+!include "FileFunc.nsh"
+
+; ============ CUSTOM WELCOME MESSAGE ============
+!define MUI_WELCOMEPAGE_TITLE "Welcome to Pub POS"
+!define MUI_WELCOMEPAGE_TEXT "This wizard will guide you through the installation of Pub POS.$\r$\n$\r$\nPub POS is a complete Point of Sale system designed for pubs, bars, and restaurants.$\r$\n$\r$\nFeatures:$\r$\n  • Fast POS checkout$\r$\n  • M-Pesa & Cash payments$\r$\n  • Thermal printer support$\r$\n  • Sales reports & analytics$\r$\n  • Hold & recall tabs$\r$\n$\r$\nClick Next to continue."
+
+; ============ CUSTOM LICENSE PAGE ============
+!define MUI_LICENSEPAGE_TEXT_TOP "Please review the license agreement before installing Pub POS."
+!define MUI_LICENSEPAGE_TEXT_BOTTOM "You must accept the terms to continue."
+!define MUI_LICENSEPAGE_BUTTON "I Agree"
+
+; ============ CUSTOM FINISH PAGE ============
+!define MUI_FINISHPAGE_TITLE "Pub POS Installation Complete!"
+!define MUI_FINISHPAGE_TEXT "Pub POS has been successfully installed on your computer.$\r$\n$\r$\nTo get started:$\r$\n  1. Launch Pub POS from the Desktop shortcut$\r$\n  2. Enter your Business Name and License Key$\r$\n  3. Start making sales!$\r$\n$\r$\nIf you don't have a license yet, you can start a 14-day free trial.$\r$\n$\r$\nSupport: support@pubpos.com"
+!define MUI_FINISHPAGE_RUN_TEXT "Launch Pub POS Now"
+!define MUI_FINISHPAGE_RUN "$INSTDIR\Pub POS.exe"
+!define MUI_FINISHPAGE_LINK "Visit our website for more info"
+!define MUI_FINISHPAGE_LINK_LOCATION "https://pubpos.com"
+
+; ============ INSTALLER ICON ============
+!define MUI_ICON "assets\icon.ico"
+!define MUI_UNICON "assets\icon.ico"
+!define MUI_HEADERIMAGE
+!define MUI_HEADERIMAGE_BITMAP "assets\installer-header.bmp"
+
+; ============ CUSTOM HEADER ============
+!define MUI_ABORTWARNING
+!define MUI_ABORTWARNING_TEXT "Are you sure you want to cancel Pub POS installation?"
+
+; ============ REGISTRY ENTRIES ============
+!macro customInstall
+  ; Add registry entries for "Open with Pub POS"
+  WriteRegStr HKCU "Software\Pub POS" "InstallPath" "$INSTDIR"
+  WriteRegStr HKCU "Software\Pub POS" "Version" "${VERSION}"
+  WriteRegStr HKCU "Software\Pub POS" "InstallDate" "$INSTDIR"
+  
+  ; Add file association for .pubpos files (optional)
+  WriteRegStr HKCR ".pubpos" "" "PubPOS.Receipt"
+  WriteRegStr HKCR "PubPOS.Receipt" "" "Pub POS Receipt"
+  WriteRegStr HKCR "PubPOS.Receipt\DefaultIcon" "" "$INSTDIR\Pub POS.exe,0"
+  WriteRegStr HKCR "PubPOS.Receipt\shell\open\command" "" '"$INSTDIR\Pub POS.exe" "%1"'
+!macroend
+
+!macro customUnInstall
+  ; Clean up registry
+  DeleteRegKey HKCU "Software\Pub POS"
+  DeleteRegKey HKCR ".pubpos"
+  DeleteRegKey HKCR "PubPOS.Receipt"
+  
+  ; Ask user if they want to delete data
+  MessageBox MB_YESNO "Do you want to also delete all Pub POS data (sales, users, licenses)?$\r$\n$\r$\nClick No to keep your data for a future reinstall." IDNO skipDataDelete
+    RMDir /r "$APPDATA\pub-pos"
+    RMDir /r "$LOCALAPPDATA\pub-pos"
+  skipDataDelete:
+!macroend

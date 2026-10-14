@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<style>
+  @page { size: 58mm auto; margin: 0; }
+  body {
+    font-family: 'Courier New', monospace;
+    width: 58mm;
+    margin: 0;
+    padding: 4px 2px;
+    font-size: 11px;
+    line-height: 1.3;
+    color: #000;
+  }
+  .logo-area {
+    text-align: center;
+    padding: 6px 0;
+    border-bottom: 2px solid #000;
+    margin-bottom: 6px;
+  }
+  .logo-area .beer {
+    font-size: 24px;
+    display: block;
+    margin-bottom: 2px;
+  }
+  .logo-area .name {
+    font-size: 16px;
+    font-weight: bold;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+  }
+  .logo-area .tagline {
+    font-size: 9px;
+    font-style: italic;
+    margin-top: 2px;
+  }
+  .info-line {
+    text-align: center;
+    font-size: 10px;
+    padding: 2px 0;
+  }
+  .divider {
+    border-top: 1px dashed #000;
+    margin: 6px 0;
+  }
+  .row {
+    display: flex;
+    justify-content: space-between;
+    padding: 2px 0;
+    font-size: 11px;
+  }
+  .row.bold { font-weight: bold; }
+  .row.large { font-size: 14px; font-weight: bold; }
+  .items-header {
+    display: flex;
+    justify-content: space-between;
+    border-bottom: 1px solid #000;
+    padding-bottom: 3px;
+    margin-bottom: 3px;
+    font-size: 10px;
+    font-weight: bold;
+  }
+  .item-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 2px 0;
+    font-size: 11px;
+  }
+  .item-row .name { flex: 1; }
+  .item-row .qty { width: 30px; text-align: center; }
+  .item-row .amount { width: 55px; text-align: right; }
+  .total-section {
+    border-top: 2px solid #000;
+    margin-top: 6px;
+    padding-top: 6px;
+  }
+  .grand-total {
+    font-size: 15px;
+    font-weight: bold;
+    background: #000;
+    color: #fff;
+    padding: 4px 6px;
+    margin-top: 4px;
+    display: flex;
+    justify-content: space-between;
+  }
+  .payment-section {
+    border-top: 1px dashed #000;
+    margin-top: 6px;
+    padding-top: 6px;
+  }
+  .footer {
+    text-align: center;
+    border-top: 1px dashed #000;
+    margin-top: 8px;
+    padding-top: 6px;
+    font-size: 9px;
+  }
+  .footer .thanks {
+    font-size: 12px;
+    font-weight: bold;
+    margin-bottom: 3px;
+  }
+  .footer .social {
+    margin-top: 4px;
+    font-size: 8px;
+  }
+  .qr-placeholder {
+    text-align: center;
+    margin: 6px 0;
+    font-size: 8px;
+  }
+  .barcode {
+    text-align: center;
+    font-family: 'Libre Barcode 39', cursive;
+    font-size: 30px;
+    margin: 4px 0;
+  }
+</style>
+</head>
+<body>
+  <div class="logo-area">
+    <span class="beer">🍺</span>
+    <div class="name" id="r-club-name">PUB POS</div>
+    <div class="tagline" id="r-tagline">Powered by Pub POS</div>
+  </div>
+
+  <div class="info-line" id="r-date">Date</div>
+  <div class="info-line" id="r-time">Time</div>
+  <div class="info-line">Cashier: <strong id="r-cashier">-</strong></div>
+  <div class="info-line">Order #<strong id="r-order-id">-</strong></div>
+
+  <div class="divider"></div>
+
+  <div class="items-header">
+    <span style="flex:1">ITEM</span>
+    <span style="width:30px;text-align:center">QTY</span>
+    <span style="width:55px;text-align:right">AMOUNT</span>
+  </div>
+
+  <div id="r-items"></div>
+
+  <div class="total-section">
+    <div class="row"><span>Subtotal</span><span id="r-subtotal">0.00</span></div>
+    <div class="row" id="r-service-row"><span>Service (10%)</span><span id="r-service">0.00</span></div>
+    <div class="grand-total">
+      <span>TOTAL</span>
+      <span id="r-total">KES 0.00</span>
+    </div>
+  </div>
+
+  <div class="payment-section" id="r-payments"></div>
+
+  <div class="divider"></div>
+
+  <div class="qr-placeholder">
+    📱 Scan for digital receipt
+  </div>
+
+  <div class="barcode" id="r-barcode">*PUBPOS*</div>
+
+  <div class="footer">
+    <div class="thanks">THANK YOU!</div>
+    <div>Please drink responsibly</div>
+    <div class="social">
+      📞 +254 700 000 000<br>
+      🌐 www.pubpos.com<br>
+      📧 info@pubpos.com
+    </div>
+  </div>
+</body>
+</html>

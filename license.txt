@@ -1,0 +1,41 @@
+PUB POS - END USER LICENSE AGREEMENT
+=====================================
+
+Copyright © 2026 Pub POS Systems Ltd.
+All rights reserved.
+
+1. LICENSE GRANT
+   This software is licensed, not sold. Pub POS Systems Ltd grants you 
+   a non-exclusive, non-transferable license to use one copy of Pub POS 
+   per business location.
+
+2. ANNUAL LICENSE FEE
+   The license is valid for one (1) year from activation.
+   Annual renewal: KSH 10,000 per year per business.
+   License is tied to your registered business name.
+
+3. RESTRICTIONS
+   - You may NOT copy, distribute, or resell this software
+   - You may NOT reverse engineer or modify the software
+   - You may NOT share your license key with other businesses
+   - License is bound to a single business name
+
+4. DATA & PRIVACY
+   All sales data, customer info, and orders are stored locally on your 
+   computer. Pub POS Systems Ltd does not collect or transmit your data.
+
+5. SUPPORT
+   Email: support@pubpos.com
+   Phone: +254 700 000 000
+   Hours: Mon-Sat, 8am - 6pm EAT
+
+6. WARRANTY
+   This software is provided "as is" without warranty of any kind.
+
+7. TERMINATION
+   This license terminates if you fail to renew within 30 days of expiry.
+   Data remains accessible for backup purposes.
+
+By clicking "I Agree", you accept these terms.
+
+Last Updated: January 2026

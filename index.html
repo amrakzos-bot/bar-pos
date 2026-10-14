@@ -1,0 +1,2825 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Bar & Restaurant Lounge POS</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<style>
+    * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Inter', 'Segoe UI', -apple-system, sans-serif; }
+    :root {
+        --bg-dark: #0a0a0a;
+        --bg-panel: #141414;
+        --bg-elevated: #1c1c1c;
+        --bg-hover: #262626;
+        --bg-input: #0f0f0f;
+        --border: #2a2a2a;
+        --border-light: #3a3a3a;
+        --text-primary: #ffffff;
+        --text-secondary: #b8b8b8;
+        --text-muted: #6e6e6e;
+        --orange: #ff7a00;
+        --orange-hover: #ff8c1a;
+        --orange-dim: #cc6200;
+        --orange-glow: rgba(255, 122, 0, 0.2);
+        --orange-soft: rgba(255, 122, 0, 0.1);
+        --green: #10b981;
+        --red: #ef4444;
+        --blue: #3b82f6;
+        --purple: #8b5cf6;
+        --gold: #fbbf24;
+    }
+    body { background: var(--bg-dark); color: var(--text-primary); min-height: 100vh; overflow-x: hidden; font-size: 14px; letter-spacing: -0.01em; }
+    .overlay { position: fixed; inset: 0; background: radial-gradient(circle at 50% 0%, #1f0e00 0%, #0a0a0a 70%); display: flex; justify-content: center; align-items: center; z-index: 10000; overflow-y: auto; padding: 20px; }
+    .glass-box { background: rgba(20, 20, 20, 0.95); backdrop-filter: blur(20px); border: 1px solid var(--border); border-radius: 20px; padding: 44px 40px; width: 520px; max-width: 100%; text-align: center; box-shadow: 0 24px 60px rgba(0,0,0,0.6); margin: auto; }
+    .glass-box .logo-icon { font-size: 56px; margin-bottom: 16px; filter: drop-shadow(0 0 20px var(--orange-glow)); }
+    .glass-box h1 { color: var(--text-primary); font-size: 26px; font-weight: 800; margin-bottom: 8px; }
+    .glass-box h1 span { color: var(--orange); }
+    .glass-box p { color: var(--text-secondary); margin-bottom: 24px; font-size: 14px; }
+    .glass-box input, .glass-box select { width: 100%; padding: 14px 16px; margin: 8px 0; background: var(--bg-input); border: 1px solid var(--border); border-radius: 10px; color: var(--text-primary); font-size: 15px; }
+    .glass-box input:focus, .glass-box select:focus { outline: none; border-color: var(--orange); box-shadow: 0 0 0 3px var(--orange-glow); }
+    .glass-box label { display: block; text-align: left; font-size: 12px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.06em; font-weight: 700; margin-top: 10px; margin-bottom: 4px; }
+    .btn { width: 100%; padding: 14px; border: none; border-radius: 10px; font-weight: 700; cursor: pointer; margin-top: 10px; font-size: 15px; color: white; transition: all 0.2s; }
+    .btn:hover { transform: translateY(-1px); }
+    .btn-orange { background: linear-gradient(135deg, var(--orange), var(--orange-dim)); box-shadow: 0 4px 16px rgba(255, 122, 0, 0.4); }
+    .btn-ghost { background: var(--bg-elevated); border: 1px solid var(--border); color: var(--text-secondary); }
+    .msg { font-size: 13px; margin-top: 12px; min-height: 20px; }
+    .msg-err { color: var(--red); } .msg-ok { color: var(--green); }
+    .price-box { background: linear-gradient(135deg, rgba(255, 122, 0, 0.15), rgba(139, 92, 246, 0.15)); border: 1px solid var(--orange-dim); border-radius: 14px; padding: 20px; margin: 16px 0; text-align: center; }
+    .price-box .amount { font-size: 36px; font-weight: 800; color: var(--orange); letter-spacing: -0.03em; }
+    .price-box .period { font-size: 12px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.1em; font-weight: 700; margin-top: 4px; }
+    .price-box .features { margin-top: 12px; font-size: 12px; color: var(--text-secondary); line-height: 1.6; }
+    #app { display: none; height: 100vh; flex-direction: column; overflow: hidden; }
+    .topbar { background: linear-gradient(180deg, #1a1a1a 0%, #141414 100%); border-bottom: 2px solid var(--orange); padding: 10px 24px; display: flex; justify-content: space-between; align-items: center; flex-shrink: 0; }
+    .brand { display: flex; align-items: center; gap: 14px; }
+    .brand-icon { width: 44px; height: 44px; background: linear-gradient(135deg, var(--orange), var(--orange-dim)); border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 24px; }
+    .brand-text h2 { font-size: 16px; font-weight: 800; }
+    .brand-text h2 span { color: var(--orange); }
+    .brand-text small { font-size: 11px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.08em; font-weight: 600; }
+    .tabs { display: flex; gap: 4px; background: var(--bg-input); padding: 4px; border-radius: 12px; border: 1px solid var(--border); flex-wrap: wrap; }
+    .tab-btn { padding: 8px 14px; background: transparent; border: none; color: var(--text-secondary); border-radius: 8px; font-weight: 600; font-size: 12px; cursor: pointer; transition: all 0.2s; }
+    .tab-btn:hover { color: var(--text-primary); background: var(--bg-hover); }
+    .tab-btn.active { background: var(--orange); color: white; }
+    .tab-btn.hidden { display: none !important; }
+    .topbar-right { display: flex; align-items: center; gap: 12px; }
+    .service-toggle { display: flex; align-items: center; gap: 8px; background: var(--bg-input); padding: 6px 14px; border-radius: 20px; border: 1px solid var(--border); font-size: 12px; font-weight: 600; }
+    .toggle-switch { position: relative; width: 36px; height: 20px; background: var(--border); border-radius: 10px; cursor: pointer; transition: all 0.3s; }
+    .toggle-switch.on { background: var(--green); }
+    .toggle-switch::after { content: ''; position: absolute; top: 2px; left: 2px; width: 16px; height: 16px; background: white; border-radius: 50%; transition: all 0.3s; }
+    .toggle-switch.on::after { left: 18px; }
+    .user-badge { display: flex; align-items: center; gap: 10px; background: var(--bg-input); padding: 6px 14px 6px 6px; border-radius: 24px; border: 1px solid var(--border); font-size: 13px; font-weight: 600; }
+    .user-avatar { width: 30px; height: 30px; background: linear-gradient(135deg, var(--orange), var(--purple)); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 800; color: white; }
+    .role-tag { font-size: 10px; padding: 2px 8px; border-radius: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; margin-left: 4px; }
+    .role-admin { background: rgba(251, 191, 36, 0.2); color: var(--gold); }
+    .role-manager { background: rgba(139, 92, 246, 0.2); color: var(--purple); }
+    .role-cashier { background: rgba(59, 130, 246, 0.2); color: var(--blue); }
+    .role-superadmin { background: rgba(239, 68, 68, 0.3); color: #ff5757; }
+    .icon-btn { background: var(--bg-input); border: 1px solid var(--border); color: var(--text-secondary); width: 38px; height: 38px; border-radius: 10px; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 16px; }
+    .icon-btn:hover { background: var(--orange-soft); color: var(--orange); border-color: var(--orange); }
+    .page { display: none; flex: 1; padding: 16px; overflow-y: auto; min-height: 0; }
+    .page.active { display: block; }
+    .page::-webkit-scrollbar { width: 10px; }
+    .page::-webkit-scrollbar-thumb { background: var(--border); border-radius: 5px; }
+    .pos-grid { display: grid; grid-template-columns: 1fr 420px; gap: 16px; height: 100%; min-height: 0; }
+    .left-panel { display: flex; flex-direction: column; gap: 12px; min-height: 0; }
+    .quick-picks { background: var(--bg-panel); border: 1px solid var(--border); border-radius: 14px; padding: 12px; display: flex; gap: 8px; overflow-x: auto; flex-shrink: 0; }
+    .qp-btn { background: var(--orange-soft); border: 1px solid var(--orange-dim); color: var(--orange); padding: 10px 16px; border-radius: 10px; font-weight: 700; font-size: 13px; cursor: pointer; white-space: nowrap; }
+    .qp-btn:hover { background: var(--orange); color: white; }
+    .search-bar { background: var(--bg-panel); border: 1px solid var(--border); border-radius: 14px; padding: 12px; flex-shrink: 0; }
+    .search-bar input { width: 100%; background: var(--bg-input); border: 1px solid var(--border); border-radius: 10px; padding: 12px 16px; color: var(--text-primary); font-size: 14px; }
+    .search-bar input:focus { outline: none; border-color: var(--orange); }
+    .products-panel { background: var(--bg-panel); border: 1px solid var(--border); border-radius: 14px; padding: 16px; flex: 1; overflow-y: auto; min-height: 0; }
+    .cat-tabs { display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; }
+    .cat-tab { background: var(--bg-elevated); border: 1px solid var(--border); color: var(--text-secondary); padding: 8px 16px; border-radius: 20px; font-size: 13px; font-weight: 600; cursor: pointer; }
+    .cat-tab.active { background: var(--orange); border-color: var(--orange); color: white; }
+    .prod-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 12px; }
+    .prod { background: var(--bg-elevated); border: 1px solid var(--border); border-radius: 12px; padding: 14px; cursor: pointer; transition: all 0.2s; }
+    .prod:hover { border-color: var(--orange); transform: translateY(-2px); }
+    .prod-name { font-weight: 700; font-size: 13px; margin-bottom: 6px; }
+    .prod-price { color: var(--orange); font-weight: 800; font-size: 16px; }
+    .prod-stock { font-size: 11px; color: var(--text-muted); margin-top: 6px; }
+    .keg-bar { width: 100%; height: 4px; background: var(--bg-dark); border-radius: 2px; margin-top: 8px; overflow: hidden; }
+    .keg-fill { height: 100%; background: linear-gradient(90deg, var(--orange), var(--orange-hover)); }
+    .cart-panel { background: var(--bg-panel); border: 1px solid var(--border); border-radius: 14px; display: flex; flex-direction: column; min-height: 0; }
+    .cart-header { padding: 16px 20px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; flex-shrink: 0; }
+    .cart-header h3 { font-size: 15px; font-weight: 800; }
+    .cart-badge { background: var(--orange); color: white; font-size: 11px; padding: 2px 8px; border-radius: 10px; font-weight: 800; margin-left: 6px; }
+    .cart-items { flex: 1; overflow-y: auto; padding: 12px; min-height: 0; }
+    .empty-cart { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; color: var(--text-muted); gap: 12px; }
+    .empty-cart .icon { font-size: 48px; opacity: 0.5; }
+    .cart-item { background: var(--bg-elevated); border: 1px solid var(--border); border-radius: 10px; padding: 12px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+    .cart-item-info { flex: 1; min-width: 0; }
+    .cart-item-name { font-weight: 700; font-size: 13px; margin-bottom: 4px; }
+    .cart-item-price { font-size: 12px; color: var(--orange); font-weight: 600; }
+    .qty-controls { display: flex; align-items: center; gap: 4px; background: var(--bg-dark); border-radius: 8px; padding: 2px; }
+    .qty-btn { background: transparent; border: none; color: var(--text-secondary); width: 26px; height: 26px; border-radius: 6px; cursor: pointer; font-weight: 800; font-size: 14px; }
+    .qty-btn:hover { background: var(--orange-soft); color: var(--orange); }
+    .qty-value { min-width: 24px; text-align: center; font-weight: 800; font-size: 13px; }
+    .remove-btn { background: transparent; border: none; color: var(--text-muted); width: 26px; height: 26px; border-radius: 6px; cursor: pointer; font-size: 14px; }
+    .remove-btn:hover { background: rgba(239, 68, 68, 0.15); color: var(--red); }
+    .cart-summary { border-top: 2px solid var(--orange); padding: 16px 20px; flex-shrink: 0; }
+    .summary-row { display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 13px; color: var(--text-secondary); }
+    .summary-row.total { font-size: 24px; font-weight: 800; color: var(--text-primary); margin-top: 12px; padding-top: 12px; border-top: 1px dashed var(--border-light); }
+    .summary-row.total span:last-child { color: var(--orange); }
+    .service-toggle-cart { display: flex; justify-content: space-between; align-items: center; margin: 10px 0; padding: 8px 12px; background: var(--bg-elevated); border-radius: 10px; border: 1px solid var(--border); }
+    .service-toggle-cart .label { font-size: 12px; color: var(--text-secondary); font-weight: 600; }
+    .pay-btns { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-top: 14px; }
+    .pay-btn { padding: 12px 8px; border: none; border-radius: 10px; font-weight: 700; cursor: pointer; color: white; font-size: 12px; display: flex; flex-direction: column; align-items: center; gap: 4px; }
+    .pay-btn:hover { transform: translateY(-1px); filter: brightness(1.15); }
+    .pay-btn .icon { font-size: 18px; }
+    .mp { background: linear-gradient(135deg, #00b843, #059669); }
+    .cs { background: linear-gradient(135deg, #3b82f6, #2563eb); }
+    .sp { background: linear-gradient(135deg, #8b5cf6, #7c3aed); }
+    .action-btns { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-top: 8px; }
+    .action-btn { padding: 10px; border: 1px solid var(--border); background: var(--bg-elevated); color: var(--text-secondary); border-radius: 10px; font-size: 11px; font-weight: 700; cursor: pointer; }
+    .action-btn:hover { background: var(--orange-soft); color: var(--orange); border-color: var(--orange); }
+    .admin-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 12px; }
+    .admin-header h1 { font-size: 24px; font-weight: 800; }
+    .admin-header h1 span { color: var(--orange); }
+    .toolbar { display: flex; gap: 8px; flex-wrap: wrap; }
+    .toolbar-btn { padding: 10px 16px; background: var(--bg-elevated); border: 1px solid var(--border); color: var(--text-secondary); border-radius: 10px; font-weight: 700; font-size: 13px; cursor: pointer; }
+    .toolbar-btn:hover { background: var(--orange-soft); color: var(--orange); border-color: var(--orange); }
+    .toolbar-btn.primary { background: linear-gradient(135deg, var(--orange), var(--orange-dim)); color: white; }
+    .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; margin-bottom: 24px; }
+    .stat-card { background: linear-gradient(135deg, #1a1a1a 0%, #141414 100%); border: 1px solid var(--border); border-radius: 16px; padding: 20px; position: relative; overflow: hidden; }
+    .stat-card::before { content: ''; position: absolute; top: 0; left: 0; bottom: 0; width: 4px; background: linear-gradient(180deg, var(--orange), var(--orange-dim)); }
+    .stat-card .label { font-size: 11px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.08em; font-weight: 700; margin-bottom: 8px; }
+    .stat-card .value { font-size: 30px; font-weight: 800; }
+    .stat-card .value.orange { color: var(--orange); }
+    .stat-card .sub { font-size: 12px; color: var(--text-muted); margin-top: 6px; }
+    .charts-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 24px; }
+    .chart-card { background: var(--bg-panel); border: 1px solid var(--border); border-radius: 16px; padding: 20px; }
+    .chart-card h3 { font-size: 15px; font-weight: 700; margin-bottom: 16px; display: flex; align-items: center; gap: 8px; }
+    .chart-card h3::before { content: ''; width: 4px; height: 16px; background: var(--orange); border-radius: 2px; }
+    .table-card { background: var(--bg-panel); border: 1px solid var(--border); border-radius: 16px; padding: 20px; margin-bottom: 20px; }
+    .table-card h3 { font-size: 15px; font-weight: 700; margin-bottom: 16px; display: flex; align-items: center; gap: 8px; }
+    .table-card h3::before { content: ''; width: 4px; height: 16px; background: var(--orange); border-radius: 2px; }
+    table { width: 100%; border-collapse: collapse; }
+    thead th { text-align: left; padding: 12px; font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-muted); font-weight: 700; border-bottom: 2px solid var(--border); }
+    tbody td { padding: 12px; border-bottom: 1px solid var(--border); font-size: 13px; color: var(--text-secondary); }
+    tbody tr:hover { background: var(--bg-hover); }
+    tbody tr:hover td { color: var(--text-primary); }
+    .badge { display: inline-block; padding: 3px 10px; border-radius: 12px; font-size: 11px; font-weight: 700; text-transform: uppercase; }
+    .badge-green { background: rgba(16, 185, 129, 0.15); color: var(--green); }
+    .badge-red { background: rgba(239, 68, 68, 0.15); color: var(--red); }
+    .badge-orange { background: var(--orange-soft); color: var(--orange); }
+    .badge-blue { background: rgba(59, 130, 246, 0.15); color: var(--blue); }
+    .badge-purple { background: rgba(139, 92, 246, 0.15); color: var(--purple); }
+    .badge-gold { background: rgba(251, 191, 36, 0.15); color: var(--gold); }
+    .row-actions { display: flex; gap: 6px; }
+    .row-btn { padding: 5px 10px; border: 1px solid var(--border); background: var(--bg-elevated); color: var(--text-secondary); border-radius: 6px; font-size: 11px; font-weight: 700; cursor: pointer; }
+    .row-btn:hover { border-color: var(--orange); color: var(--orange); }
+    .row-btn.danger:hover { border-color: var(--red); color: var(--red); }
+    .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+    .form-group { display: flex; flex-direction: column; }
+    .form-group label { font-size: 11px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.06em; font-weight: 700; margin-bottom: 6px; }
+    .form-group input, .form-group select, .form-group textarea { padding: 10px 14px; background: var(--bg-input); border: 1px solid var(--border); border-radius: 10px; color: var(--text-primary); font-size: 14px; font-family: inherit; }
+    .form-group input:focus, .form-group select:focus, .form-group textarea:focus { outline: none; border-color: var(--orange); box-shadow: 0 0 0 3px var(--orange-glow); }
+    .bottom-ribbon { background: linear-gradient(90deg, #1a1a1a 0%, #141414 50%, #1a1a1a 100%); border-top: 2px solid var(--orange); padding: 8px 24px; display: flex; justify-content: space-between; align-items: center; flex-shrink: 0; font-size: 12px; color: var(--text-muted); }
+    .ribbon-brand { display: flex; align-items: center; gap: 10px; }
+    .ribbon-brand .name { font-weight: 800; color: var(--orange); letter-spacing: 0.05em; text-transform: uppercase; font-size: 12px; }
+    .ribbon-center { display: flex; align-items: center; gap: 20px; }
+    .ribbon-item { display: flex; align-items: center; gap: 6px; }
+    .ribbon-item .val { color: var(--text-primary); font-weight: 700; }
+    .ribbon-right { display: flex; align-items: center; gap: 16px; }
+    .modal { display: none; position: fixed; inset: 0; background: rgba(0, 0, 0, 0.85); backdrop-filter: blur(8px); justify-content: center; align-items: center; z-index: 1000; overflow-y: auto; padding: 20px; }
+    .modal.active { display: flex; }
+    .modal-box { background: var(--bg-panel); border: 1px solid var(--border); border-radius: 16px; padding: 28px; width: 540px; max-width: 100%; max-height: 90vh; overflow-y: auto; margin: auto; }
+    .modal-box h3 { margin-bottom: 20px; font-size: 18px; font-weight: 800; display: flex; align-items: center; gap: 10px; }
+    .modal-box h3::before { content: ''; width: 4px; height: 20px; background: var(--orange); border-radius: 2px; }
+    .modal-row { display: flex; gap: 10px; margin-top: 20px; }
+    .modal-row button { flex: 1; padding: 12px; border: none; border-radius: 10px; font-weight: 700; cursor: pointer; color: white; font-size: 14px; }
+    .confirm { background: linear-gradient(135deg, var(--orange), var(--orange-dim)); }
+    .cancel { background: var(--bg-elevated); color: var(--text-secondary); border: 1px solid var(--border); }
+    .danger { background: linear-gradient(135deg, var(--red), #b91c1c); }
+    .total-display { background: var(--bg-dark); padding: 16px; border-radius: 12px; text-align: center; margin-bottom: 16px; border: 1px solid var(--border); }
+    .total-display .label { font-size: 11px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.08em; font-weight: 700; }
+    .total-display .amount { font-size: 30px; font-weight: 800; color: var(--orange); margin-top: 4px; }
+    .receipt { background: white; color: black; padding: 20px; border-radius: 12px; font-family: 'Courier New', monospace; font-size: 12px; }
+    .toast { position: fixed; bottom: 60px; right: 24px; padding: 14px 22px; border-radius: 12px; color: white; display: none; z-index: 2000; font-weight: 700; font-size: 14px; align-items: center; gap: 10px; }
+    .toast-ok { background: linear-gradient(135deg, var(--green), #059669); }
+    .toast-err { background: linear-gradient(135deg, var(--red), #dc2626); }
+    .toast-info { background: linear-gradient(135deg, var(--orange), var(--orange-dim)); }
+    #printFrame { position: fixed; width: 0; height: 0; border: 0; visibility: hidden; }
+    .license-key-display { background: var(--bg-dark); border: 2px dashed var(--orange); border-radius: 12px; padding: 20px; margin: 12px 0; text-align: center; }
+    .license-key-display .key { font-family: 'Courier New', monospace; font-size: 20px; font-weight: 800; color: var(--orange); letter-spacing: 2px; word-break: break-all; }
+    .license-status-banner { background: linear-gradient(90deg, var(--orange-soft), transparent); border-left: 4px solid var(--orange); padding: 12px 16px; border-radius: 10px; margin-bottom: 16px; font-size: 13px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; }
+    .license-status-banner.warning { background: linear-gradient(90deg, rgba(251, 191, 36, 0.15), transparent); border-left-color: var(--gold); }
+    .license-status-banner.danger { background: linear-gradient(90deg, rgba(239, 68, 68, 0.15), transparent); border-left-color: var(--red); }
+    .ref-input { background: var(--bg-dark); border: 2px solid var(--orange-dim); border-radius: 10px; padding: 12px 14px; font-family: 'Courier New', monospace; font-size: 16px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; color: var(--orange); text-align: center; }
+    .ref-input:focus { outline: none; border-color: var(--orange); box-shadow: 0 0 0 3px var(--orange-glow); }
+    .ref-note { font-size: 11px; color: var(--text-muted); margin-top: 6px; text-align: center; font-style: italic; }
+    .ref-code { font-family: 'Courier New', monospace; font-weight: 800; color: var(--orange); background: var(--orange-soft); padding: 2px 8px; border-radius: 4px; font-size: 11px; letter-spacing: 0.5px; }
+    .rooms-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 16px; }
+    .room-card { background: var(--bg-panel); border: 2px solid var(--border); border-radius: 14px; padding: 18px; transition: all 0.2s; position: relative; overflow: hidden; }
+    .room-card:hover { transform: translateY(-3px); box-shadow: 0 8px 24px rgba(0,0,0,0.4); }
+    .room-card.available { border-color: var(--green); }
+    .room-card.available::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 4px; background: var(--green); }
+    .room-card.occupied { border-color: var(--orange); }
+    .room-card.occupied::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 4px; background: var(--orange); }
+    .room-card.reserved { border-color: var(--purple); }
+    .room-card.reserved::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 4px; background: var(--purple); }
+    .room-card.cleaning { border-color: var(--blue); }
+    .room-card.cleaning::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 4px; background: var(--blue); }
+    .room-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px; cursor: pointer; }
+    .room-number { font-size: 22px; font-weight: 800; }
+    .room-type { font-size: 11px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.06em; font-weight: 700; margin-bottom: 12px; cursor: pointer; }
+    .room-status-pill { font-size: 10px; padding: 4px 10px; border-radius: 12px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.05em; }
+    .room-status-pill.available { background: rgba(16, 185, 129, 0.15); color: var(--green); }
+    .room-status-pill.occupied { background: var(--orange-soft); color: var(--orange); }
+    .room-status-pill.reserved { background: rgba(139, 92, 246, 0.15); color: var(--purple); }
+    .room-status-pill.cleaning { background: rgba(59, 130, 246, 0.15); color: var(--blue); }
+    .room-info { font-size: 12px; color: var(--text-secondary); line-height: 1.7; }
+    .room-info strong { color: var(--text-primary); }
+    .room-total { margin-top: 12px; padding-top: 12px; border-top: 1px dashed var(--border); display: flex; justify-content: space-between; font-size: 14px; font-weight: 800; }
+    .room-total .amount { color: var(--orange); }
+    .rooms-filter { display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; }
+    .room-filter-btn { padding: 8px 16px; background: var(--bg-elevated); border: 1px solid var(--border); color: var(--text-secondary); border-radius: 20px; font-weight: 600; font-size: 13px; cursor: pointer; }
+    .room-filter-btn.active { background: var(--orange); border-color: var(--orange); color: white; }
+    .recon-summary-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 16px; margin-bottom: 24px; }
+    @media (max-width: 1100px) { .pos-grid { grid-template-columns: 1fr 340px; } .charts-grid { grid-template-columns: 1fr; } }
+    @media (max-width: 900px) { .pos-grid { grid-template-columns: 1fr; } .form-grid { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+
+<!-- ================= LICENSE ACTIVATION ================= -->
+<div id="licenseScreen" class="overlay">
+  <div class="glass-box">
+    <div class="logo-icon">🍺</div>
+    <h1>Bar & Restaurant <span>Lounge POS</span></h1>
+    <p>Activate your annual license to use the system</p>
+    <div class="price-box">
+      <div class="amount">KSH 10,000</div>
+      <div class="period">Per Year</div>
+      <div class="features">✅ Unlimited transactions ✅ Full POS ✅ Rooms ✅ Reports ✅ Free updates</div>
+    </div>
+    <label>Business / Club Name</label>
+    <input type="text" id="licenseBusinessName" placeholder="e.g., THE ROYAL OAK LOUNGE" autocomplete="off">
+    <label>License Key</label>
+    <input type="text" id="licenseInput" placeholder="XXXX-XXXX-XXXX-XXXX" autocomplete="off">
+    <button class="btn btn-orange" onclick="activateLicense()">🔓 Activate License</button>
+    <button class="btn btn-ghost" onclick="startTrial()">🎁 Start 14-Day Free Trial</button>
+    <div id="licenseMsg" class="msg"></div>
+    <div style="margin-top:24px; padding-top:20px; border-top:1px solid var(--border); font-size:12px; color:var(--text-muted);">
+      <p style="margin-bottom:8px;">🔑 Demo Key: <strong style="color:var(--orange);">DEMO-2024</strong></p>
+      <p>Contact: amrakzos@gmail.com · +254 143 831 387</p>
+    </div>
+  </div>
+</div>
+
+<!-- ================= LOGIN ================= -->
+<div id="loginScreen" class="overlay" style="display:none;">
+  <div class="glass-box">
+    <div class="logo-icon">🔐</div>
+    <h1>Welcome Back</h1>
+    <p id="loginWelcomeMsg">Sign in to your account</p>
+    <input type="text" id="loginUser" placeholder="Username" value="admin">
+    <input type="password" id="loginPass" placeholder="Password" value="admin123">
+    <button class="btn btn-orange" onclick="doLogin()">Sign In</button>
+    <div id="loginMsg" class="msg"></div>
+    <div style="margin-top:24px; padding-top:20px; border-top:1px solid var(--border); font-size:12px; color:var(--text-muted); text-align:left; line-height:1.8;">
+      <p><strong style="color:var(--gold);">👑 Admin (Licensee):</strong> admin / admin123</p>
+      <p><strong style="color:var(--purple);">📊 Manager:</strong> manager / mgr123</p>
+      <p><strong style="color:var(--blue);">👤 Cashier:</strong> cashier / cash123</p>
+    </div>
+  </div>
+</div>
+
+<!-- ================= APP ================= -->
+<div id="app">
+  <div class="topbar">
+    <div class="brand">
+      <div class="brand-icon">🍺</div>
+      <div class="brand-text">
+        <h2 id="brandName">Bar & Restaurant <span>Lounge POS</span></h2>
+        <small>Terminal 01 · <span id="clock">--:--</span></small>
+      </div>
+    </div>
+    
+    <div class="tabs" id="mainTabs">
+      <button class="tab-btn active" data-tab="pos" data-perm="pos.view" onclick="switchTab('pos', event)">🛒 POS</button>
+      <button class="tab-btn" data-tab="rooms" data-perm="rooms.view" onclick="switchTab('rooms', event)">🚪 Rooms</button>
+      <button class="tab-btn" data-tab="dashboard" data-perm="dashboard.view" onclick="switchTab('dashboard', event)">📊 Dashboard</button>
+      <button class="tab-btn" data-tab="users" data-perm="users.view" onclick="switchTab('users', event)">👥 Users</button>
+      <button class="tab-btn" data-tab="reports" data-perm="reports.view" onclick="switchTab('reports', event)">📈 Reports</button>
+      <button class="tab-btn" data-tab="reconciliation" data-perm="reconciliation.view" onclick="switchTab('reconciliation', event)">🔍 Reconciliation</button>
+      <button class="tab-btn" data-tab="stockManager" data-perm="stock.view" onclick="openStockManager()">📦 Stock Manager</button>
+      <button class="tab-btn" data-tab="tabs" data-perm="tabs.view" onclick="switchTab('tabs', event)">📂 Tabs</button>
+      <button class="tab-btn" data-tab="license" data-perm="license.view" onclick="switchTab('license', event)">🔑 License</button>
+      <button class="tab-btn" data-tab="settings" data-perm="settings.view" onclick="switchTab('settings', event)">⚙️ Settings</button>
+    </div>
+    
+    <div class="topbar-right">
+      <div class="service-toggle" id="serviceToggleContainer">
+        <span>Service</span>
+        <div class="toggle-switch" id="serviceToggle" onclick="toggleServiceCharge()"></div>
+      </div>
+      <div class="user-badge">
+        <div class="user-avatar" id="userAvatar">A</div>
+        <div>
+          <div id="userInfo">Admin</div>
+          <span class="role-tag role-admin" id="userRoleTag">Admin</span>
+        </div>
+      </div>
+      <button class="icon-btn" onclick="logout()" title="Logout">⏻</button>
+    </div>
+  </div>
+
+  <!-- POS -->
+  <div class="page active" id="page-pos">
+    <div class="pos-grid">
+      <div class="left-panel">
+        <div class="quick-picks" id="quickPicks"></div>
+        <div class="search-bar"><input type="text" id="searchInput" placeholder="🔍  Search menu items..." oninput="filterProducts()"></div>
+        <div class="products-panel">
+          <div class="cat-tabs" id="categoryTabs"></div>
+          <div class="prod-grid" id="prodGrid"></div>
+        </div>
+      </div>
+      <div class="cart-panel">
+        <div class="cart-header">
+          <h3>🛒 Current Tab <span class="cart-badge" id="cartBadge">0</span></h3>
+          <button class="icon-btn" onclick="clearCart()" style="width:32px;height:32px;">🗑️</button>
+        </div>
+        <div class="cart-items" id="cartItems"></div>
+        <div class="cart-summary">
+          <div class="summary-row"><span>Subtotal</span><span id="subtotal">KES 0</span></div>
+          <div class="service-toggle-cart">
+            <span class="label">Service Charge (<span id="servicePercentLabel">10</span>%)</span>
+            <div class="toggle-switch" id="serviceToggleCart" onclick="toggleServiceCharge()"></div>
+          </div>
+          <div class="summary-row"><span>Service</span><span id="service">KES 0</span></div>
+          <div class="summary-row total"><span>Total</span><span id="total">KES 0</span></div>
+          <div class="pay-btns">
+            <button class="pay-btn mp" onclick="openPay('mpesa')"><span class="icon">📱</span>M-Pesa</button>
+            <button class="pay-btn cs" onclick="openPay('cash')"><span class="icon">💵</span>Cash</button>
+            <button class="pay-btn sp" onclick="openPay('split')"><span class="icon">⚡</span>Split</button>
+          </div>
+          <div class="action-btns">
+            <button class="action-btn" onclick="holdTab()">📌 Hold</button>
+            <button class="action-btn" onclick="recallTab()">↩️ Recall</button>
+            <button class="action-btn" onclick="voidTab()">❌ Void</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ROOMS -->
+  <div class="page" id="page-rooms">
+    <div class="admin-header">
+      <h1>🚪 <span>Room Management</span></h1>
+      <div class="toolbar">
+        <button class="toolbar-btn primary" onclick="openRoomModal()">➕ Add Room</button>
+        <button class="toolbar-btn" onclick="loadRooms()">🔄 Refresh</button>
+      </div>
+    </div>
+    <div class="rooms-filter">
+      <button class="room-filter-btn active" onclick="filterRooms('all', this)">All Rooms</button>
+      <button class="room-filter-btn" onclick="filterRooms('available', this)">✅ Available</button>
+      <button class="room-filter-btn" onclick="filterRooms('occupied', this)">🔴 Occupied</button>
+      <button class="room-filter-btn" onclick="filterRooms('reserved', this)">🟣 Reserved</button>
+      <button class="room-filter-btn" onclick="filterRooms('cleaning', this)">🔵 Cleaning</button>
+    </div>
+    <div class="stats-grid" style="margin-bottom: 20px;">
+      <div class="stat-card"><div class="label">Total Rooms</div><div class="value" id="roomStatTotal">0</div></div>
+      <div class="stat-card"><div class="label">Occupied</div><div class="value orange" id="roomStatOccupied">0</div></div>
+      <div class="stat-card"><div class="label">Available</div><div class="value" style="color:var(--green);" id="roomStatAvailable">0</div></div>
+      <div class="stat-card"><div class="label">Occupancy Rate</div><div class="value" id="roomStatRate">0%</div></div>
+    </div>
+    <div class="rooms-grid" id="roomsGrid"></div>
+    <div id="roomsEmpty" class="empty-cart" style="display:none; padding:60px;">
+      <div class="icon">🚪</div>
+      <div>No rooms yet. Click <strong>Add Room</strong> to get started.</div>
+    </div>
+  </div>
+
+  <!-- DASHBOARD -->
+  <div class="page" id="page-dashboard">
+    <div class="admin-header">
+      <h1>📊 <span>Dashboard</span></h1>
+      <div class="toolbar">
+        <button class="toolbar-btn" onclick="refreshDashboard()">🔄 Refresh</button>
+        <button class="toolbar-btn primary" onclick="exportDashboard()">📤 Export</button>
+      </div>
+    </div>
+    <div class="stats-grid" id="dashStats"></div>
+    <div class="charts-grid">
+      <div class="chart-card"><h3>📈 Sales Trend (7 Days)</h3><canvas id="salesChart" height="180"></canvas></div>
+      <div class="chart-card"><h3>🥧 Payment Methods</h3><canvas id="paymentChart" height="180"></canvas></div>
+    </div>
+    <div class="charts-grid">
+      <div class="chart-card"><h3>👥 Cashier Performance</h3><canvas id="cashierChart" height="180"></canvas></div>
+      <div class="chart-card"><h3>🏆 Top Selling Items</h3><canvas id="topItemsChart" height="180"></canvas></div>
+    </div>
+  </div>
+
+  <!-- USERS -->
+  <div class="page" id="page-users">
+    <div class="admin-header">
+      <h1>👥 <span>User Management</span></h1>
+      <div class="toolbar">
+        <button class="toolbar-btn primary" onclick="openUserModal()">➕ Add User</button>
+        <button class="toolbar-btn" onclick="exportUsers()">📤 Export</button>
+        <button class="toolbar-btn" onclick="importUsers()">📥 Import</button>
+      </div>
+    </div>
+    <div class="table-card">
+      <h3>All Users</h3>
+      <table>
+        <thead><tr><th>ID</th><th>Username</th><th>Full Name</th><th>Role</th><th>Status</th><th>Last Login</th><th>Actions</th></tr></thead>
+        <tbody id="usersTableBody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- REPORTS -->
+  <div class="page" id="page-reports">
+    <div class="admin-header">
+      <h1>📈 <span>Reports & Reconciliation</span></h1>
+      <div class="toolbar">
+        <button class="toolbar-btn" onclick="generateReport('daily')">📅 Daily</button>
+        <button class="toolbar-btn" onclick="generateReport('weekly')">📆 Weekly</button>
+        <button class="toolbar-btn" onclick="generateReport('monthly')">🗓️ Monthly</button>
+        <button class="toolbar-btn primary" onclick="printReportThermal()">🖨️ Thermal</button>
+        <button class="toolbar-btn" onclick="printReportA4()">📄 A4</button>
+        <button class="toolbar-btn" onclick="exportReport()">📤 Excel</button>
+      </div>
+    </div>
+    <div class="stats-grid" id="reportStats"></div>
+    <div class="table-card">
+      <h3>📋 Order Details</h3>
+      <table>
+        <thead><tr><th>Order #</th><th>Date</th><th>Time</th><th>Cashier</th><th>Items</th><th>Payment</th><th>Reference / Code</th><th>Total</th></tr></thead>
+        <tbody id="reportTableBody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- RECONCILIATION -->
+  <div class="page" id="page-reconciliation">
+    <div class="admin-header">
+      <h1>🔍 <span>Reconciliation</span></h1>
+      <div class="toolbar">
+        <input type="date" id="reconDate" style="padding: 10px 14px; background: var(--bg-input); border: 1px solid var(--border); border-radius: 10px; color: var(--text-primary); font-size: 14px;" onchange="loadReconciliation()">
+        <button class="toolbar-btn" onclick="loadReconciliation()">🔄 Refresh</button>
+        <button class="toolbar-btn primary" onclick="printReconciliationReport()">🖨️ Print Report</button>
+        <button class="toolbar-btn" onclick="exportReconciliation()">📤 Export</button>
+      </div>
+    </div>
+
+    <div id="reconLockedBanner" style="display:none; padding:14px 20px; background:#d1fae5; color:#065f46; border-radius:12px; margin-bottom:16px; justify-content:space-between; align-items:center; font-weight:700;"></div>
+
+    <div class="recon-summary-grid" id="reconSummary"></div>
+
+    <div class="table-card">
+      <h3>💰 Cash Drawer Count</h3>
+      <div class="form-grid" style="max-width:800px;">
+        <div class="form-group">
+          <label>Opening Float (KSH)</label>
+          <input type="number" id="reconOpeningFloat" value="0" step="0.01" oninput="updateCashVariance()">
+        </div>
+        <div class="form-group">
+          <label>Cash Sales (Auto)</label>
+          <input type="text" id="reconCashSales" value="0.00" disabled style="background:var(--bg-dark); color:var(--orange); font-weight:700;">
+        </div>
+        <div class="form-group">
+          <label>Expected Cash in Till</label>
+          <input type="text" id="reconExpectedCash" value="0.00" disabled style="background:var(--bg-dark); color:var(--text-primary); font-weight:700;">
+        </div>
+        <div class="form-group">
+          <label>Actual Cash Counted (KSH)</label>
+          <input type="number" id="reconActualCash" value="0" step="0.01" oninput="updateCashVariance()">
+        </div>
+        <div class="form-group">
+          <label>Variance</label>
+          <input type="text" id="reconCashVariance" value="0.00" disabled style="background:var(--bg-dark); font-weight:800;">
+        </div>
+      </div>
+    </div>
+
+    <div class="table-card">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+        <h3 style="margin:0;">📱 M-Pesa Reconciliation</h3>
+        <div id="mpesaReconStats" style="font-size:13px; color:var(--text-muted);"></div>
+      </div>
+      <table>
+        <thead>
+          <tr>
+            <th>Order #</th>
+            <th>Time</th>
+            <th>Cashier</th>
+            <th>Phone</th>
+            <th>M-Pesa Code</th>
+            <th>Amount</th>
+            <th>Status</th>
+            <th>Verify</th>
+          </tr>
+        </thead>
+        <tbody id="mpesaReconBody"></tbody>
+      </table>
+      <div id="mpesaReconEmpty" class="empty-state" style="display:none; padding:30px; text-align:center; color:var(--text-muted);">No M-Pesa transactions for this day.</div>
+    </div>
+
+    <div class="table-card">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+        <h3 style="margin:0;">💳 Card Reconciliation</h3>
+        <div id="cardReconStats" style="font-size:13px; color:var(--text-muted);"></div>
+      </div>
+      <table>
+        <thead>
+          <tr>
+            <th>Order #</th>
+            <th>Time</th>
+            <th>Cashier</th>
+            <th>Card Reference</th>
+            <th>Amount</th>
+            <th>Status</th>
+            <th>Verify</th>
+          </tr>
+        </thead>
+        <tbody id="cardReconBody"></tbody>
+      </table>
+      <div id="cardReconEmpty" class="empty-state" style="display:none; padding:30px; text-align:center; color:var(--text-muted);">No card transactions for this day.</div>
+    </div>
+
+    <div class="table-card">
+      <h3>✍️ Daily Sign-off</h3>
+      <div class="form-grid">
+        <div class="form-group">
+          <label>Reconciled By (Name)</label>
+          <input type="text" id="reconBy" placeholder="e.g., Jane Manager">
+        </div>
+        <div class="form-group">
+          <label>Notes / Anomalies</label>
+          <input type="text" id="reconNotes" placeholder="Any discrepancies or comments">
+        </div>
+      </div>
+      <div style="display:flex; gap:10px; margin-top:16px; flex-wrap:wrap;">
+        <button class="toolbar-btn primary" id="reconSubmitBtn" onclick="submitReconciliation()">✅ Submit & Lock Day</button>
+        <button class="toolbar-btn" style="border-color:var(--red); color:var(--red);" onclick="unlockReconciliation()">🔓 Unlock (Superadmin only)</button>
+      </div>
+    </div>
+
+    <div class="table-card">
+      <h3>📈 Weekly Reconciliation Trend</h3>
+      <canvas id="reconTrendChart" height="180"></canvas>
+    </div>
+  </div>
+
+  <!-- HELD TABS -->
+  <div class="page" id="page-tabs">
+    <div class="admin-header">
+      <h1>📂 <span>Held Tabs</span></h1>
+      <div class="toolbar"><button class="toolbar-btn" onclick="loadHeldTabs()">🔄 Refresh</button></div>
+    </div>
+    <div class="table-card">
+      <h3>Currently Held Tabs</h3>
+      <p style="color:var(--text-muted); font-size:12px; margin-bottom:16px;" id="tabsFilterInfo"></p>
+      <table>
+        <thead>
+          <tr>
+            <th>Tab ID</th><th>Customer</th><th>Items</th><th>Total</th>
+            <th>Held By</th><th>Role</th><th>Held At</th><th>Actions</th>
+          </tr>
+        </thead>
+        <tbody id="heldTabsBody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- LICENSE -->
+  <div class="page" id="page-license">
+    <div class="admin-header">
+      <h1>🔑 <span>License Management</span></h1>
+      <div class="toolbar">
+        <button class="toolbar-btn primary" id="generateLicenseBtn" onclick="openGenerateLicenseModal()" style="display:none;">➕ Generate License</button>
+        <button class="toolbar-btn" onclick="exportLicenses()">📤 Export</button>
+      </div>
+    </div>
+    <div class="license-status-banner" id="licenseStatusBanner"></div>
+    <div class="stats-grid" id="licenseStats"></div>
+    <div class="table-card">
+      <h3>All Generated Licenses</h3>
+      <table>
+        <thead><tr><th>License Key</th><th>Business Name</th><th>Issued</th><th>Expires</th><th>Days Left</th><th>Status</th><th>Actions</th></tr></thead>
+        <tbody id="licensesTableBody"></tbody>
+      </table>
+    </div>
+    <div class="table-card">
+      <h3>💰 Pricing</h3>
+      <div class="price-box" style="max-width:400px; margin:0;">
+        <div class="amount">KSH 10,000</div>
+        <div class="period">Per Year · Per Business</div>
+        <div class="features">✅ Valid 365 days ✅ Rooms ✅ Unlimited transactions ✅ Free updates</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SETTINGS -->
+  <div class="page" id="page-settings">
+    <div class="admin-header"><h1>⚙️ <span>Settings</span></h1></div>
+    
+    <div class="table-card">
+      <h3>Business Information</h3>
+      <div class="form-grid">
+        <div class="form-group"><label>Club Name</label><input type="text" id="settingClubName" value="Bar & Restaurant Lounge POS"></div>
+        <div class="form-group"><label>Tagline</label><input type="text" id="settingTagline" value="Est. 2024"></div>
+        <div class="form-group"><label>Currency</label><input type="text" id="settingCurrency" value="KES"></div>
+        <div class="form-group"><label>Service Charge %</label><input type="number" id="settingService" value="10"></div>
+      </div>
+      <div style="margin-top:16px;"><button class="toolbar-btn primary" onclick="saveSettings()">💾 Save</button></div>
+    </div>
+    
+    <div class="table-card">
+      <h3>🖨️ Thermal Printer Settings</h3>
+      <div class="form-grid">
+        <div class="form-group"><label>Paper Size</label>
+          <select id="settingPaperSize">
+            <option value="58mm">58mm (Standard Thermal)</option>
+            <option value="80mm">80mm (Wide Thermal)</option>
+            <option value="A4">A4 (Regular)</option>
+          </select>
+        </div>
+        <div class="form-group"><label>Auto-Print</label>
+          <select id="settingAutoPrint"><option value="yes">Yes</option><option value="no">No</option></select>
+        </div>
+        <div class="form-group"><label>Print Method</label>
+          <select id="settingPrintMethod"><option value="iframe">Silent</option><option value="window">New Window</option></select>
+        </div>
+        <div class="form-group"><label>Test</label>
+          <button class="toolbar-btn" onclick="testPrint()" style="margin-top:4px;">🖨️ Test Print</button>
+        </div>
+      </div>
+      <div style="margin-top:16px;"><button class="toolbar-btn primary" onclick="savePrinterSettings()">💾 Save Printer Settings</button></div>
+    </div>
+    
+    <div class="table-card">
+      <h3>💰 Service Charge</h3>
+      <div style="display:flex; justify-content:space-between; align-items:center; padding:16px; background:var(--bg-elevated); border-radius:12px;">
+        <div>
+          <div style="font-weight:700; margin-bottom:4px;">Service Charge Status</div>
+          <div style="font-size:12px; color:var(--text-muted);">Currently: <span id="serviceStatusText">Enabled</span></div>
+        </div>
+        <div class="toggle-switch" id="serviceToggleSettings" onclick="toggleServiceCharge()" style="width:52px; height:28px;"></div>
+      </div>
+      <div class="form-group" style="margin-top:16px;">
+        <label>Service Charge %</label>
+        <input type="number" id="settingServiceChargePercent" value="10" min="0" max="100">
+      </div>
+      <div style="margin-top:16px;"><button class="toolbar-btn primary" onclick="saveServiceSettings()">💾 Save Service Settings</button></div>
+    </div>
+
+    <div class="table-card" id="renewalCard" style="display:none;">
+      <h3>🔄 License Renewal</h3>
+      <p style="font-size:13px; color:var(--text-muted); margin-bottom:12px;">
+        Renew your license with the same details — no need to re-enter everything.
+      </p>
+      <div class="license-status-banner" id="renewalBanner"></div>
+      <div style="display:flex; gap:10px; flex-wrap:wrap;">
+        <button class="toolbar-btn primary" onclick="showRenewalPrompt(true)">🔄 Renew Now</button>
+      </div>
+    </div>
+    
+    <div class="table-card">
+      <h3>Data Management</h3>
+      <div style="display:flex; gap:10px; flex-wrap:wrap;">
+        <button class="toolbar-btn" onclick="exportAllData()">📤 Export All</button>
+        <button class="toolbar-btn" onclick="importAllData()">📥 Import</button>
+        <button class="toolbar-btn" style="border-color:var(--red); color:var(--red);" onclick="resetAllData()">⚠️ Reset All</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="bottom-ribbon">
+    <div class="ribbon-brand">
+      <span>🍺</span>
+      <span class="name" id="ribbonClubName">BAR & RESTAURANT LOUNGE POS</span>
+      <span>·</span>
+      <span id="ribbonTerminal">Terminal 01</span>
+    </div>
+    <div class="ribbon-center">
+      <div class="ribbon-item"><span>Today:</span><span class="val" id="ribbonTodaySales">KES 0</span></div>
+      <div class="ribbon-item"><span>Orders:</span><span class="val" id="ribbonTodayOrders">0</span></div>
+      <div class="ribbon-item"><span>Cart:</span><span class="val" id="ribbonCartCount">0</span></div>
+      <div class="ribbon-item"><span>Rooms:</span><span class="val" id="ribbonRoomsOccupied">0/0</span></div>
+      <div class="ribbon-item"><span>Service:</span><span class="val" id="ribbonServiceStatus">ON</span></div>
+    </div>
+    <div class="ribbon-right">
+      <span>🔐 <span id="ribbonLicense">Trial</span></span>
+      <span id="ribbonClock">--:--:--</span>
+    </div>
+  </div>
+</div>
+
+<iframe id="printFrame"></iframe>
+
+<!-- PAYMENT MODAL -->
+<div id="payModal" class="modal">
+  <div class="modal-box">
+    <h3 id="payTitle">Payment</h3>
+    <div class="total-display">
+      <div class="label">Amount Due</div>
+      <div class="amount" id="payTotal">KES 0.00</div>
+    </div>
+    <div id="payFields"></div>
+    <div class="modal-row">
+      <button class="confirm" onclick="confirmPay()">Confirm</button>
+      <button class="cancel" onclick="closePay()">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<!-- RECEIPT MODAL -->
+<div id="receiptModal" class="modal">
+  <div class="modal-box">
+    <h3>Receipt Preview</h3>
+    <div class="receipt" id="receiptBody"></div>
+    <div class="modal-row">
+      <button class="confirm" onclick="printReceiptThermal()">🖨️ Print Thermal</button>
+      <button class="cancel" onclick="closeReceipt()">Close</button>
+    </div>
+  </div>
+</div>
+
+<!-- USER MODAL -->
+<div id="userModal" class="modal">
+  <div class="modal-box">
+    <h3 id="userModalTitle">Add User</h3>
+    <input type="hidden" id="editUserId">
+    <div class="form-group" style="margin-bottom:12px;"><label>Username</label><input type="text" id="userUsername"></div>
+    <div class="form-group" style="margin-bottom:12px;"><label>Full Name</label><input type="text" id="userFullName"></div>
+    <div class="form-group" style="margin-bottom:12px;"><label>Password</label><input type="password" id="userPassword"></div>
+    <div class="form-group" style="margin-bottom:12px;"><label>Role</label>
+      <select id="userRole">
+        <option value="cashier">👤 Cashier / Barman</option>
+        <option value="manager">📊 Manager</option>
+        <option value="admin">👑 Administrator</option>
+      </select>
+    </div>
+    <div class="form-group"><label>Status</label>
+      <select id="userStatus"><option value="active">Active</option><option value="inactive">Inactive</option></select>
+    </div>
+    <div class="modal-row">
+      <button class="confirm" onclick="saveUser()">Save</button>
+      <button class="cancel" onclick="closeUserModal()">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<!-- ROOM MODAL -->
+<div id="roomModal" class="modal">
+  <div class="modal-box">
+    <h3 id="roomModalTitle">Add Room</h3>
+    <input type="hidden" id="editRoomId">
+    <div class="form-grid">
+      <div class="form-group"><label>Room Number / Name</label><input type="text" id="roomNumber" placeholder="e.g., 101 or VIP-A"></div>
+      <div class="form-group"><label>Room Type</label>
+        <select id="roomType">
+          <option value="Standard">Standard</option>
+          <option value="Deluxe">Deluxe</option>
+          <option value="VIP">VIP</option>
+          <option value="Suite">Suite</option>
+          <option value="Outdoor">Outdoor</option>
+          <option value="Private Booth">Private Booth</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-grid">
+      <div class="form-group"><label>Capacity (people)</label><input type="number" id="roomCapacity" value="2" min="1"></div>
+      <div class="form-group"><label>Price per Night (Ksh)</label><input type="number" id="roomPrice" value="3000" step="100"></div>
+    </div>
+    <div class="form-group" style="margin-top:12px;"><label>Description / Notes</label>
+      <textarea id="roomDescription" rows="2" placeholder="Optional notes about this room"></textarea>
+    </div>
+    <div class="modal-row">
+      <button class="confirm" onclick="saveRoom()">Save Room</button>
+      <button class="cancel" onclick="closeRoomModal()">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<!-- ROOM DETAIL MODAL -->
+<div id="roomDetailModal" class="modal">
+  <div class="modal-box">
+    <h3 id="roomDetailTitle">Room Details</h3>
+    <div id="roomDetailBody"></div>
+    <div class="modal-row"></div>
+  </div>
+</div>
+
+<!-- GENERATE LICENSE MODAL -->
+<div id="generateLicenseModal" class="modal">
+  <div class="modal-box">
+    <h3>🔑 Generate Annual License</h3>
+    <p style="color:var(--text-secondary); margin-bottom:16px;">Price: <strong style="color:var(--orange);">KSH 10,000/year</strong></p>
+    <div class="form-group" style="margin-bottom:12px;"><label>Business / Club Name *</label><input type="text" id="genBusinessName" placeholder="e.g., THE ROYAL OAK LOUNGE"></div>
+    <div class="form-group" style="margin-bottom:12px;"><label>Contact Person</label><input type="text" id="genContactPerson"></div>
+    <div class="form-group" style="margin-bottom:12px;"><label>Contact Phone</label><input type="tel" id="genContactPhone"></div>
+    <div class="form-group" style="margin-bottom:12px;"><label>Contact Email</label><input type="email" id="genContactEmail"></div>
+    <div class="form-group" style="margin-bottom:12px;"><label>Duration</label>
+      <select id="genLicenseDuration">
+        <option value="1">1 Year - KSH 10,000</option>
+        <option value="2">2 Years - KSH 20,000</option>
+        <option value="3">3 Years - KSH 30,000</option>
+        <option value="5">5 Years - KSH 50,000</option>
+      </select>
+    </div>
+    <div id="generatedKeyDisplay" class="license-key-display" style="display:none;">
+      <div style="font-size:11px; color:var(--text-muted); text-transform:uppercase; margin-bottom:6px;">Generated Key</div>
+      <div class="key" id="newLicenseKey">-</div>
+      <button class="toolbar-btn" onclick="copyGeneratedKey()" style="margin-top:12px;">📋 Copy Key</button>
+    </div>
+    <div class="modal-row">
+      <button class="confirm" onclick="generateLicense()">💰 Generate License</button>
+      <button class="cancel" onclick="closeGenerateLicenseModal()">Close</button>
+    </div>
+  </div>
+</div>
+
+<!-- IMPORT MODAL -->
+<div id="importModal" class="modal">
+  <div class="modal-box">
+    <h3>Import Data</h3>
+    <textarea id="importText" style="width:100%; height:200px; background:var(--bg-input); color:var(--text-primary); border:1px solid var(--border); border-radius:10px; padding:12px; font-family:monospace; font-size:12px;"></textarea>
+    <div class="modal-row">
+      <button class="confirm" onclick="doImport()">Import</button>
+      <button class="cancel" onclick="closeImportModal()">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast" class="toast"></div>
+
+<script>
+// ============ SUPER ADMIN ============
+var SUPER_ADMIN = {
+  id: -1,
+  username: 'superadmin',
+  password: 'SuperSecret2024!',
+  name: 'System Owner',
+  role: 'superadmin',
+  status: 'active',
+  lastLogin: null,
+  isSuperAdmin: true
+};
+
+var PERMISSIONS = {
+  superadmin: {},
+  admin: {
+    'pos.view': true,
+    'rooms.view': true, 'rooms.create': true, 'rooms.edit': true, 'rooms.delete': true, 'rooms.assign': true,
+    'dashboard.view': true,
+    'users.view': true, 'users.create': true, 'users.edit': true, 'users.delete': true, 'users.activate': true,
+    'reports.view': true, 'reports.export': true, 'reports.print': true,
+    'reconciliation.view': true, 'reconciliation.edit': true,
+    'stock.view': true, 'stock.edit': true, 'stock.print': true,
+    'tabs.view': true, 'tabs.viewAll': true,
+    'license.view': true, 'license.generate': false, 'license.revoke': false, 'license.renew': false,
+    'settings.view': true, 'settings.edit': true,
+    'serviceCharge.toggle': true
+  },
+  manager: {
+    'pos.view': true,
+    'rooms.view': true, 'rooms.create': true, 'rooms.edit': true, 'rooms.delete': false, 'rooms.assign': true,
+    'dashboard.view': true,
+    'users.view': true, 'users.create': true, 'users.edit': true, 'users.delete': false, 'users.activate': true,
+    'reports.view': true, 'reports.export': true, 'reports.print': true,
+    'reconciliation.view': true, 'reconciliation.edit': true,
+    'stock.view': true, 'stock.edit': true, 'stock.print': true,
+    'tabs.view': true, 'tabs.viewAll': true,
+    'license.view': false, 'license.generate': false, 'license.revoke': false, 'license.renew': false,
+    'settings.view': false, 'settings.edit': false,
+    'serviceCharge.toggle': true
+  },
+  cashier: {
+    'pos.view': true,
+    'rooms.view': true, 'rooms.create': false, 'rooms.edit': false, 'rooms.delete': false, 'rooms.assign': true,
+    'dashboard.view': false,
+    'users.view': false, 'users.create': false, 'users.edit': false, 'users.delete': false, 'users.activate': false,
+    'reports.view': false, 'reports.export': false, 'reports.print': false,
+    'reconciliation.view': false, 'reconciliation.edit': false,
+    'stock.view': false, 'stock.edit': false, 'stock.print': false,
+    'tabs.view': true, 'tabs.viewAll': false,
+    'license.view': false, 'license.generate': false, 'license.revoke': false, 'license.renew': false,
+    'settings.view': false, 'settings.edit': false,
+    'serviceCharge.toggle': false
+  }
+};
+
+function can(permission) {
+  if (!currentUser) return false;
+  if (currentUser.role === 'superadmin') return true;
+  var rolePerms = PERMISSIONS[currentUser.role];
+  return rolePerms && rolePerms[permission] === true;
+}
+
+function applyPermissions() {
+  document.querySelectorAll('.tab-btn[data-perm]').forEach(function(btn) {
+    var perm = btn.getAttribute('data-perm');
+    if (can(perm)) btn.classList.remove('hidden');
+    else btn.classList.add('hidden');
+  });
+  var stc = document.getElementById('serviceToggleContainer');
+  if (stc) stc.style.display = can('serviceCharge.toggle') ? 'flex' : 'none';
+  var sc = document.getElementById('serviceToggleCart');
+  if (sc) sc.style.display = can('serviceCharge.toggle') ? 'block' : 'none';
+  var sts = document.getElementById('serviceToggleSettings');
+  if (sts) sts.style.display = can('serviceCharge.toggle') ? 'block' : 'none';
+  var tag = document.getElementById('userRoleTag');
+  if (tag && currentUser) {
+    tag.textContent = currentUser.role.charAt(0).toUpperCase() + currentUser.role.slice(1);
+    tag.className = 'role-tag role-' + currentUser.role;
+  }
+  updateLicenseButtons();
+}
+
+function updateLicenseButtons() {
+  var isSuperAdmin = currentUser && currentUser.role === 'superadmin';
+  var genBtn = document.getElementById('generateLicenseBtn');
+  if (genBtn) genBtn.style.display = isSuperAdmin ? 'inline-flex' : 'none';
+  var renewalCard = document.getElementById('renewalCard');
+  if (renewalCard) renewalCard.style.display = isSuperAdmin ? 'block' : 'none';
+}
+
+var currentUser = null;
+var cart = [];
+var pendingPayment = null;
+var currentCategory = 'all';
+var currentTab = 'pos';
+var serviceChargeEnabled = true;
+var currentReceiptOrder = null;
+var activeLicense = null;
+var currentRoomFilter = 'all';
+var settings = {
+  clubName: 'Bar & Restaurant Lounge POS',
+  tagline: 'Est. 2024',
+  serviceCharge: 10,
+  currency: 'KES',
+  paperSize: '58mm',
+  autoPrint: 'yes',
+  printMethod: 'iframe',
+  serviceChargeEnabled: true
+};
+
+var LICENSE_PRICE_PER_YEAR = 10000;
+
+var defaultProducts = [
+  { id: 101, name: 'Tusker Draught', price: 300, category: 'Draught', stock: 78, keg: true },
+  { id: 102, name: 'White Cap', price: 280, category: 'Draught', stock: 45, keg: true },
+  { id: 103, name: 'Guinness', price: 320, category: 'Draught', stock: 92, keg: true },
+  { id: 104, name: 'Craft IPA', price: 450, category: 'Draught', stock: 30, keg: true },
+  { id: 201, name: 'Tusker Bottle', price: 350, category: 'Bottles', stock: 120 },
+  { id: 202, name: 'Smirnoff Ice', price: 300, category: 'Bottles', stock: 85 },
+  { id: 203, name: 'Coke', price: 150, category: 'Soft Drinks', stock: 200 },
+  { id: 204, name: 'Soda Water', price: 100, category: 'Soft Drinks', stock: 150 },
+  { id: 301, name: 'Vodka Shot', price: 250, category: 'Spirits', stock: 60 },
+  { id: 302, name: 'Whiskey Shot', price: 350, category: 'Spirits', stock: 45 },
+  { id: 303, name: 'Gin & Tonic', price: 500, category: 'Cocktails', stock: 100 },
+  { id: 304, name: 'Mojito', price: 600, category: 'Cocktails', stock: 100 },
+  { id: 401, name: 'Chicken Wings', price: 550, category: 'Food', stock: 80 },
+  { id: 402, name: 'Beef Burger', price: 650, category: 'Food', stock: 60 },
+  { id: 403, name: 'French Fries', price: 300, category: 'Food', stock: 120 }
+];
+
+var products = JSON.parse(localStorage.getItem('pub_products') || 'null') || defaultProducts;
+var users = JSON.parse(localStorage.getItem('pub_users') || 'null') || [
+  { id: 1, username: 'admin', password: 'admin123', name: 'Business Owner', role: 'admin', status: 'active', lastLogin: null },
+  { id: 2, username: 'manager', password: 'mgr123', name: 'Jane Manager', role: 'manager', status: 'active', lastLogin: null },
+  { id: 3, username: 'cashier', password: 'cash123', name: 'John Barman', role: 'cashier', status: 'active', lastLogin: null }
+];
+var heldTabs = JSON.parse(localStorage.getItem('pub_held_tabs') || '[]');
+var licenses = JSON.parse(localStorage.getItem('pub_licenses') || '[]');
+var rooms = JSON.parse(localStorage.getItem('pub_rooms') || '[]');
+
+var quickPicks = [
+  { name: '🍺 Tusker', id: 101 }, { name: '🥃 Vodka', id: 301 },
+  { name: '🥤 Coke', id: 203 }, { name: '🍗 Wings', id: 401 },
+  { name: '🍺 White Cap', id: 102 }, { name: '🍸 G&T', id: 303 }
+];
+
+var categories = ['all', 'Draught', 'Bottles', 'Soft Drinks', 'Spirits', 'Cocktails', 'Food'];
+
+window.onload = function() {
+  loadSettings();
+  updateClock();
+  setInterval(updateClock, 1000);
+  updateServiceToggleUI();
+  if (checkStoredLicense()) showLogin();
+  else showLicense();
+  updateRibbon();
+};
+
+function checkStoredLicense() {
+  try {
+    var stored = localStorage.getItem('active_license');
+    if (!stored) return false;
+    var lic = JSON.parse(stored);
+    if (!lic.key || !lic.expires) return false;
+    var expDate = new Date(lic.expires);
+    activeLicense = lic;
+    if (expDate > new Date()) {
+      settings.clubName = lic.businessName || settings.clubName;
+      var bn = document.getElementById('brandName');
+      if (bn) bn.innerHTML = lic.businessName + ' <span>POS</span>';
+      var rc = document.getElementById('ribbonClubName');
+      if (rc) rc.textContent = lic.businessName;
+      var lw = document.getElementById('loginWelcomeMsg');
+      if (lw) lw.textContent = 'Sign in to ' + lic.businessName;
+      return true;
+    }
+    return false;
+  } catch(e) { return false; }
+}
+
+function getDaysLeft(expires) {
+  return Math.ceil((new Date(expires) - new Date()) / (1000 * 60 * 60 * 24));
+}
+
+function activateLicense() {
+  var businessName = document.getElementById('licenseBusinessName').value.trim().toUpperCase();
+  var key = document.getElementById('licenseInput').value.trim().toUpperCase();
+  var msg = document.getElementById('licenseMsg');
+  if (!businessName) { msg.className = 'msg msg-err'; msg.textContent = '❌ Enter your Business Name'; return; }
+  if (!key) { msg.className = 'msg msg-err'; msg.textContent = '❌ Enter your License Key'; return; }
+  if (key === 'DEMO-2024') {
+    var expires = new Date(); expires.setDate(expires.getDate() + 365);
+    var lic = { key: key, businessName: businessName, issued: new Date().toISOString(), expires: expires.toISOString(), price: 10000, currency: 'KSH', type: 'demo' };
+    localStorage.setItem('active_license', JSON.stringify(lic));
+    activeLicense = lic;
+    settings.clubName = businessName;
+    saveSettings();
+    msg.className = 'msg msg-ok';
+    msg.textContent = '✅ Demo activated for ' + businessName + '!';
+    setTimeout(showLogin, 1200);
+    return;
+  }
+  var found = null;
+  for (var i = 0; i < licenses.length; i++) { if (licenses[i].key === key) { found = licenses[i]; break; } }
+  if (found) {
+    if (found.revoked) { msg.className = 'msg msg-err'; msg.textContent = '❌ License revoked'; return; }
+    var daysLeft = getDaysLeft(found.expires);
+    if (daysLeft <= 0) { msg.className = 'msg msg-err'; msg.textContent = '❌ Expired. Renew KSH 10,000/year'; return; }
+    if (found.businessName.toUpperCase() !== businessName) { msg.className = 'msg msg-err'; msg.textContent = '❌ Registered to "' + found.businessName + '"'; return; }
+    localStorage.setItem('active_license', JSON.stringify(found));
+    activeLicense = found;
+    settings.clubName = businessName;
+    saveSettings();
+    msg.className = 'msg msg-ok';
+    msg.textContent = '✅ Activated! ' + daysLeft + ' days remaining';
+    setTimeout(showLogin, 1200);
+  } else {
+    msg.className = 'msg msg-err';
+    msg.textContent = '❌ Invalid key. Try DEMO-2024';
+  }
+}
+
+function startTrial() {
+  var businessName = document.getElementById('licenseBusinessName').value.trim().toUpperCase();
+  var msg = document.getElementById('licenseMsg');
+  if (!businessName) { msg.className = 'msg msg-err'; msg.textContent = '❌ Enter Business Name first'; return; }
+  try {
+    var expires = new Date(); expires.setDate(expires.getDate() + 14);
+    var lic = { key: 'TRIAL-' + Date.now(), businessName: businessName, issued: new Date().toISOString(), expires: expires.toISOString(), price: 0, currency: 'KSH', type: 'trial' };
+    localStorage.setItem('active_license', JSON.stringify(lic));
+    activeLicense = lic;
+    settings.clubName = businessName;
+    saveSettings();
+    msg.className = 'msg msg-ok';
+    msg.textContent = '✅ 14-day trial started!';
+    setTimeout(showLogin, 1200);
+  } catch(e) { msg.className = 'msg msg-err'; msg.textContent = '⚠️ ' + e.message; }
+}
+
+function showRenewalPrompt(forceShow) {
+  if (forceShow === true) {
+    if (!currentUser || currentUser.role !== 'superadmin') { toast('🚫 Only the system owner can renew licenses', true, 'err'); return false; }
+  } else {
+    if (currentUser && currentUser.role !== 'superadmin') return false;
+  }
+  var stored = localStorage.getItem('active_license');
+  if (!stored) return false;
+  try {
+    var lic = JSON.parse(stored);
+    var daysLeft = getDaysLeft(lic.expires);
+    if (!forceShow && daysLeft > 7) return false;
+    var isExpired = daysLeft <= 0;
+    var title = isExpired ? '⚠️ License Expired' : '⏰ License Expiring Soon';
+    var message = isExpired ? 'Your license has EXPIRED. Renew now to continue using the POS.\n\n' : 'Your license expires in ' + daysLeft + ' day' + (daysLeft !== 1 ? 's' : '') + '.\n\n';
+    message += 'Renew for KSH 10,000/year with the SAME details?\n\nBusiness: ' + lic.businessName + '\nContact:  ' + (lic.contactPerson || 'N/A') + '\nPhone:    ' + (lic.contactPhone || 'N/A') + '\nEmail:    ' + (lic.contactEmail || 'N/A');
+    if (!confirm(title + '\n\n' + message)) return false;
+    var changeDetails = confirm('Do you want to CHANGE the business details?\n\n✅ OK — Update the details\n❌ Cancel — Renew with the SAME details');
+    if (changeDetails) {
+      var newBusiness = prompt('Business / Club Name:', lic.businessName);
+      if (!newBusiness) { toast('Renewal cancelled — no name entered', true, 'err'); return false; }
+      var newContact = prompt('Contact Person:', lic.contactPerson || '');
+      if (newContact === null) return false;
+      var newPhone = prompt('Contact Phone:', lic.contactPhone || '');
+      if (newPhone === null) return false;
+      var newEmail = prompt('Contact Email:', lic.contactEmail || '');
+      if (newEmail === null) return false;
+      lic.businessName = newBusiness.trim().toUpperCase();
+      lic.contactPerson = newContact.trim();
+      lic.contactPhone = newPhone.trim();
+      lic.contactEmail = newEmail.trim();
+    }
+    var currentExpiry = new Date(lic.expires);
+    var now = new Date();
+    var baseDate = currentExpiry > now ? currentExpiry : now;
+    var newExpiry = new Date(baseDate);
+    newExpiry.setDate(newExpiry.getDate() + 365);
+    lic.expires = newExpiry.toISOString();
+    lic.renewedAt = new Date().toISOString();
+    lic.type = 'paid';
+    lic.price = 10000;
+    localStorage.setItem('active_license', JSON.stringify(lic));
+    activeLicense = lic;
+    settings.clubName = lic.businessName;
+    saveSettings();
+    if (document.getElementById('brandName')) document.getElementById('brandName').innerHTML = lic.businessName + ' <span>POS</span>';
+    if (document.getElementById('ribbonClubName')) document.getElementById('ribbonClubName').textContent = lic.businessName;
+    if (document.getElementById('loginWelcomeMsg')) document.getElementById('loginWelcomeMsg').textContent = 'Sign in to ' + lic.businessName;
+    toast('✅ License renewed! New expiry: ' + newExpiry.toLocaleDateString(), false, 'ok');
+    if (typeof updateRenewalBanner === 'function') updateRenewalBanner();
+    if (typeof updateLicenseStatusBanner === 'function') updateLicenseStatusBanner();
+    if (typeof updateRibbon === 'function') updateRibbon();
+    setTimeout(function() { location.reload(); }, 1800);
+    return true;
+  } catch(e) { console.error('Renewal error:', e); toast('Renewal failed: ' + e.message, true, 'err'); return false; }
+}
+
+function updateRenewalBanner() {
+  var banner = document.getElementById('renewalBanner');
+  if (!banner) return;
+  if (!activeLicense) { banner.className = 'license-status-banner danger'; banner.innerHTML = '<span>⚠️ No active license</span>'; return; }
+  var days = getDaysLeft(activeLicense.expires);
+  if (days <= 0) { banner.className = 'license-status-banner danger'; banner.innerHTML = '<span>❌ EXPIRED ' + Math.abs(days) + ' days ago</span><span>Renew: KSH 10,000/year</span>'; }
+  else if (days <= 7) { banner.className = 'license-status-banner warning'; banner.innerHTML = '<span>⏰ Expires in ' + days + ' day' + (days !== 1 ? 's' : '') + '</span><span>' + activeLicense.businessName + '</span>'; }
+  else if (days <= 30) { banner.className = 'license-status-banner warning'; banner.innerHTML = '<span>⚠️ ' + days + ' days remaining</span><span>' + activeLicense.businessName + '</span>'; }
+  else { banner.className = 'license-status-banner'; banner.innerHTML = '<span>✅ ' + days + ' days remaining</span><span>' + activeLicense.businessName + '</span>'; }
+}
+
+function generateLicenseKey(businessName) {
+  var cleanName = businessName.replace(/[^A-Z0-9]/g, '').substring(0, 4).padEnd(4, 'X');
+  var year = new Date().getFullYear();
+  var chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+  var seg1 = '', seg2 = '';
+  for (var i = 0; i < 4; i++) seg1 += chars.charAt(Math.floor(Math.random() * chars.length));
+  for (var j = 0; j < 4; j++) seg2 += chars.charAt(Math.floor(Math.random() * chars.length));
+  return cleanName + '-' + year + '-' + seg1 + '-' + seg2;
+}
+
+function openGenerateLicenseModal() {
+  if (!currentUser || currentUser.role !== 'superadmin') { toast('🚫 Only the system owner can generate licenses', true, 'err'); return; }
+  ['genBusinessName','genContactPerson','genContactPhone','genContactEmail'].forEach(function(id) { var el = document.getElementById(id); if (el) el.value = ''; });
+  document.getElementById('genLicenseDuration').value = '1';
+  document.getElementById('generatedKeyDisplay').style.display = 'none';
+  document.getElementById('generateLicenseModal').classList.add('active');
+}
+
+function closeGenerateLicenseModal() { document.getElementById('generateLicenseModal').classList.remove('active'); }
+
+function generateLicense() {
+  if (!currentUser || currentUser.role !== 'superadmin') { toast('🚫 Only the system owner can generate licenses', true, 'err'); return; }
+  var businessName = document.getElementById('genBusinessName').value.trim().toUpperCase();
+  var contactPerson = document.getElementById('genContactPerson').value.trim();
+  var contactPhone = document.getElementById('genContactPhone').value.trim();
+  var contactEmail = document.getElementById('genContactEmail').value.trim();
+  var years = parseInt(document.getElementById('genLicenseDuration').value) || 1;
+  if (!businessName) { toast('Business name required', true, 'err'); return; }
+  var key = generateLicenseKey(businessName);
+  var issued = new Date();
+  var expires = new Date();
+  expires.setDate(expires.getDate() + (365 * years));
+  var lic = {
+    key: key, businessName: businessName,
+    contactPerson: contactPerson, contactPhone: contactPhone, contactEmail: contactEmail,
+    issued: issued.toISOString(), expires: expires.toISOString(),
+    years: years, price: LICENSE_PRICE_PER_YEAR * years, currency: 'KSH',
+    type: 'paid', revoked: false,
+    generatedBy: currentUser ? currentUser.name : 'System'
+  };
+  licenses.push(lic);
+  localStorage.setItem('pub_licenses', JSON.stringify(licenses));
+  document.getElementById('newLicenseKey').textContent = key;
+  document.getElementById('generatedKeyDisplay').style.display = 'block';
+  loadLicensesTable();
+  updateLicenseStats();
+  toast('💰 License generated · KSH ' + (LICENSE_PRICE_PER_YEAR * years).toLocaleString(), false, 'ok');
+}
+
+function copyGeneratedKey() {
+  var key = document.getElementById('newLicenseKey').textContent;
+  navigator.clipboard.writeText(key).then(function() { toast('📋 Copied', false, 'ok'); });
+}
+
+function loadLicensesTable() {
+  var tbody = document.getElementById('licensesTableBody');
+  if (!tbody) return;
+  if (licenses.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; padding:40px; color:var(--text-muted);">No licenses yet</td></tr>';
+    return;
+  }
+  var html = '';
+  var sorted = licenses.slice().sort(function(a, b) { return new Date(b.issued) - new Date(a.issued); });
+  for (var i = 0; i < sorted.length; i++) {
+    var lic = sorted[i];
+    var daysLeft = getDaysLeft(lic.expires);
+    var status = lic.revoked ? 'REVOKED' : (daysLeft <= 0 ? 'EXPIRED' : (daysLeft <= 30 ? 'EXPIRING' : 'ACTIVE'));
+    var statusClass = lic.revoked ? 'badge-red' : (daysLeft <= 0 ? 'badge-red' : (daysLeft <= 30 ? 'badge-gold' : 'badge-green'));
+    html += '<tr>';
+    html += '<td><code style="color:var(--orange); font-weight:700;">' + lic.key + '</code></td>';
+    html += '<td><strong>' + lic.businessName + '</strong></td>';
+    html += '<td>' + new Date(lic.issued).toLocaleDateString() + '</td>';
+    html += '<td>' + new Date(lic.expires).toLocaleDateString() + '</td>';
+    html += '<td><span class="badge ' + (daysLeft <= 30 ? 'badge-red' : 'badge-green') + '">' + (daysLeft > 0 ? daysLeft + 'd' : 'Expired') + '</span></td>';
+    html += '<td><span class="badge ' + statusClass + '">' + status + '</span></td>';
+    html += '<td><div class="row-actions">';
+    html += '<button class="row-btn" onclick="copyLicenseKey(\'' + lic.key + '\')">📋</button>';
+    if (currentUser && currentUser.role === 'superadmin') {
+      if (!lic.revoked) html += '<button class="row-btn danger" onclick="revokeLicense(\'' + lic.key + '\')">🚫</button>';
+      else html += '<button class="row-btn" onclick="unrevokeLicense(\'' + lic.key + '\')">✅</button>';
+      html += '<button class="row-btn danger" onclick="deleteLicense(\'' + lic.key + '\')">🗑️</button>';
+    }
+    html += '</div></td></tr>';
+  }
+  tbody.innerHTML = html;
+}
+
+function copyLicenseKey(key) { navigator.clipboard.writeText(key).then(function() { toast('📋 Copied: ' + key, false, 'ok'); }); }
+
+function revokeLicense(key) {
+  if (!currentUser || currentUser.role !== 'superadmin') { toast('🚫 Only the system owner can revoke licenses', true, 'err'); return; }
+  if (!confirm('Revoke this license?')) return;
+  for (var i = 0; i < licenses.length; i++) { if (licenses[i].key === key) { licenses[i].revoked = true; break; } }
+  localStorage.setItem('pub_licenses', JSON.stringify(licenses));
+  loadLicensesTable(); updateLicenseStats();
+  toast('🚫 License revoked', false, 'info');
+}
+
+function unrevokeLicense(key) {
+  if (!currentUser || currentUser.role !== 'superadmin') { toast('🚫 Only the system owner can restore licenses', true, 'err'); return; }
+  for (var i = 0; i < licenses.length; i++) { if (licenses[i].key === key) { licenses[i].revoked = false; break; } }
+  localStorage.setItem('pub_licenses', JSON.stringify(licenses));
+  loadLicensesTable(); updateLicenseStats();
+  toast('✅ License restored', false, 'ok');
+}
+
+function deleteLicense(key) {
+  if (!currentUser || currentUser.role !== 'superadmin') { toast('🚫 Only the system owner can delete licenses', true, 'err'); return; }
+  if (!confirm('Permanently delete?')) return;
+  licenses = licenses.filter(function(l) { return l.key !== key; });
+  localStorage.setItem('pub_licenses', JSON.stringify(licenses));
+  loadLicensesTable(); updateLicenseStats();
+  toast('🗑️ Deleted', false, 'info');
+}
+
+function updateLicenseStats() {
+  var stats = document.getElementById('licenseStats');
+  if (!stats) return;
+  var total = licenses.length, active = 0, expiring = 0, revenue = 0;
+  for (var i = 0; i < licenses.length; i++) {
+    var lic = licenses[i];
+    var days = getDaysLeft(lic.expires);
+    if (!lic.revoked && days > 30) active++;
+    else if (!lic.revoked && days > 0 && days <= 30) expiring++;
+    if (lic.type === 'paid') revenue += lic.price;
+  }
+  stats.innerHTML = '<div class="stat-card"><div class="label">Total Licenses</div><div class="value">' + total + '</div></div>' +
+    '<div class="stat-card"><div class="label">Active</div><div class="value" style="color:var(--green);">' + active + '</div></div>' +
+    '<div class="stat-card"><div class="label">Expiring Soon</div><div class="value" style="color:var(--gold);">' + expiring + '</div><div class="sub">≤30 days</div></div>' +
+    '<div class="stat-card"><div class="label">Total Revenue</div><div class="value orange">KSH ' + revenue.toLocaleString() + '</div></div>';
+}
+
+function exportLicenses() { downloadJSON(licenses, 'licenses-export.json'); }
+
+function updateLicenseStatusBanner() {
+  var banner = document.getElementById('licenseStatusBanner');
+  if (!banner) return;
+  if (!activeLicense) { banner.className = 'license-status-banner danger'; banner.innerHTML = '<span>⚠️ No active license</span>'; return; }
+  var days = getDaysLeft(activeLicense.expires);
+  var typeText = activeLicense.type === 'trial' ? 'Trial' : 'Licensed';
+  if (days <= 0) { banner.className = 'license-status-banner danger'; banner.innerHTML = '<span>❌ Expired</span><span>Renew: KSH 10,000/year</span>'; }
+  else if (days <= 30) { banner.className = 'license-status-banner warning'; banner.innerHTML = '<span>⚠️ ' + typeText + ' - ' + days + ' days left</span><span>Renew: KSH 10,000/year</span>'; }
+  else { banner.className = 'license-status-banner'; banner.innerHTML = '<span>✅ ' + typeText + ' - ' + days + ' days remaining</span><span>' + activeLicense.businessName + '</span>'; }
+}
+
+function updateServiceToggleUI() {
+  ['serviceToggle', 'serviceToggleCart', 'serviceToggleSettings'].forEach(function(id) {
+    var el = document.getElementById(id);
+    if (!el) return;
+    if (serviceChargeEnabled) el.classList.add('on'); else el.classList.remove('on');
+  });
+  var st = document.getElementById('serviceStatusText');
+  if (st) st.textContent = serviceChargeEnabled ? 'Enabled' : 'Disabled';
+  var rs = document.getElementById('ribbonServiceStatus');
+  if (rs) { rs.textContent = serviceChargeEnabled ? 'ON' : 'OFF'; rs.style.color = serviceChargeEnabled ? 'var(--green)' : 'var(--red)'; }
+}
+
+function toggleServiceCharge() {
+  if (!can('serviceCharge.toggle')) { toast('Access denied — Manager or Admin only', true, 'err'); return; }
+  serviceChargeEnabled = !serviceChargeEnabled;
+  settings.serviceChargeEnabled = serviceChargeEnabled;
+  localStorage.setItem('pub_settings', JSON.stringify(settings));
+  updateServiceToggleUI();
+  updateTotals();
+  toast('Service charge ' + (serviceChargeEnabled ? 'enabled' : 'disabled'), false, serviceChargeEnabled ? 'ok' : 'info');
+}
+
+function loadSettings() {
+  var saved = localStorage.getItem('pub_settings');
+  if (saved) { try { settings = Object.assign(settings, JSON.parse(saved)); } catch(e) {} }
+  serviceChargeEnabled = settings.serviceChargeEnabled !== false;
+  var ids = ['settingClubName','settingTagline','settingService','settingCurrency','settingPaperSize','settingAutoPrint','settingPrintMethod','settingServiceChargePercent'];
+  var vals = [settings.clubName, settings.tagline, settings.serviceCharge, settings.currency, settings.paperSize, settings.autoPrint, settings.printMethod, settings.serviceCharge];
+  for (var i = 0; i < ids.length; i++) { var el = document.getElementById(ids[i]); if (el) el.value = vals[i]; }
+  var rc = document.getElementById('ribbonClubName'); if (rc) rc.textContent = settings.clubName;
+  var sp = document.getElementById('servicePercentLabel'); if (sp) sp.textContent = settings.serviceCharge;
+  updateServiceToggleUI();
+  if (typeof updateRenewalBanner === 'function') updateRenewalBanner();
+}
+
+function saveSettings() {
+  if (!can('settings.edit')) { toast('Access denied — Admin only', true, 'err'); return; }
+  settings.clubName = document.getElementById('settingClubName').value || 'Bar & Restaurant Lounge POS';
+  settings.tagline = document.getElementById('settingTagline').value;
+  settings.serviceCharge = parseInt(document.getElementById('settingService').value) || 10;
+  settings.currency = document.getElementById('settingCurrency').value || 'KES';
+  localStorage.setItem('pub_settings', JSON.stringify(settings));
+  document.getElementById('ribbonClubName').textContent = settings.clubName;
+  document.getElementById('servicePercentLabel').textContent = settings.serviceCharge;
+  updateTotals();
+  toast('Settings saved', false, 'ok');
+}
+
+function savePrinterSettings() {
+  if (!can('settings.edit')) { toast('Access denied', true, 'err'); return; }
+  settings.paperSize = document.getElementById('settingPaperSize').value;
+  settings.autoPrint = document.getElementById('settingAutoPrint').value;
+  settings.printMethod = document.getElementById('settingPrintMethod').value;
+  localStorage.setItem('pub_settings', JSON.stringify(settings));
+  toast('Printer settings saved', false, 'ok');
+}
+
+function saveServiceSettings() {
+  if (!can('settings.edit')) { toast('Access denied', true, 'err'); return; }
+  settings.serviceCharge = parseInt(document.getElementById('settingServiceChargePercent').value) || 10;
+  localStorage.setItem('pub_settings', JSON.stringify(settings));
+  document.getElementById('servicePercentLabel').textContent = settings.serviceCharge;
+  updateTotals();
+  toast('Service settings saved', false, 'ok');
+}
+
+function updateClock() {
+  var t = new Date().toLocaleTimeString();
+  var el1 = document.getElementById('clock'); if (el1) el1.textContent = t;
+  var el2 = document.getElementById('ribbonClock'); if (el2) el2.textContent = t;
+}
+
+function updateRibbon() {
+  try {
+    var orders = JSON.parse(localStorage.getItem('pub_orders') || '[]');
+    var today = new Date().toLocaleDateString();
+    var todayOrders = orders.filter(function(o) { return o.date === today; });
+    var todayTotal = todayOrders.reduce(function(s, o) { return s + o.total; }, 0);
+    document.getElementById('ribbonTodaySales').textContent = settings.currency + ' ' + todayTotal.toFixed(0);
+    document.getElementById('ribbonTodayOrders').textContent = todayOrders.length;
+    document.getElementById('ribbonCartCount').textContent = cart.length;
+    var occupied = rooms.filter(function(r) { return r.status === 'occupied'; }).length;
+    var rr = document.getElementById('ribbonRoomsOccupied');
+    if (rr) rr.textContent = occupied + '/' + rooms.length;
+    var licEl = document.getElementById('ribbonLicense');
+    if (activeLicense) {
+      var days = getDaysLeft(activeLicense.expires);
+      var lic = activeLicense.type === 'trial' ? 'Trial' : 'Licensed';
+      licEl.textContent = lic + ' (' + (days > 0 ? days + 'd' : 'Expired') + ')';
+    } else { licEl.textContent = 'None'; }
+  } catch(e) {}
+}
+
+function showLicense() { document.getElementById('licenseScreen').style.display = 'flex'; document.getElementById('loginScreen').style.display = 'none'; document.getElementById('app').style.display = 'none'; }
+function showLogin() { document.getElementById('licenseScreen').style.display = 'none'; document.getElementById('loginScreen').style.display = 'flex'; document.getElementById('app').style.display = 'none'; }
+function showApp() { document.getElementById('licenseScreen').style.display = 'none'; document.getElementById('loginScreen').style.display = 'none'; document.getElementById('app').style.display = 'flex'; }
+
+function doLogin() {
+  var u = document.getElementById('loginUser').value.trim();
+  var p = document.getElementById('loginPass').value;
+  var msg = document.getElementById('loginMsg');
+  var found = null;
+  if (u === SUPER_ADMIN.username && p === SUPER_ADMIN.password) {
+    found = Object.assign({}, SUPER_ADMIN);
+    found.lastLogin = new Date().toISOString();
+  } else {
+    for (var i = 0; i < users.length; i++) {
+      if (users[i].username === u && users[i].password === p) {
+        if (users[i].status === 'inactive') { msg.className = 'msg msg-err'; msg.textContent = '❌ Account deactivated'; return; }
+        found = users[i]; break;
+      }
+    }
+  }
+  if (found) {
+    currentUser = found;
+    if (!found.isSuperAdmin) {
+      found.lastLogin = new Date().toISOString();
+      localStorage.setItem('pub_users', JSON.stringify(users));
+    }
+    msg.textContent = '';
+    showApp();
+    document.getElementById('userInfo').textContent = found.name;
+    document.getElementById('userAvatar').textContent = found.name.charAt(0).toUpperCase();
+    applyPermissions();
+    renderQuickPicks(); renderCategoryTabs(); renderProducts(); renderCart();
+    initDashboard(); loadUsersTable(); loadHeldTabs(); loadRooms();
+    loadLicensesTable(); updateLicenseStats(); updateLicenseStatusBanner();
+    updateLicenseButtons();
+    updateRibbon();
+    if (found.role === 'cashier') switchTab('pos', {target: document.querySelectorAll('.tab-btn[data-tab="pos"]')[0]});
+    if (found.isSuperAdmin) toast('👑 Superadmin access granted', false, 'info');
+    else toast('Welcome, ' + found.name + ' (' + found.role + ')', false, 'ok');
+  } else { msg.className = 'msg msg-err'; msg.textContent = '❌ Invalid credentials'; }
+}
+
+function logout() { if (confirm('Logout?')) { currentUser = null; cart = []; showLogin(); } }
+
+function switchTab(tab, evt) {
+  var permMap = {
+    'pos': 'pos.view', 'rooms': 'rooms.view', 'dashboard': 'dashboard.view', 'users': 'users.view',
+    'reports': 'reports.view', 'reconciliation': 'reconciliation.view', 'tabs': 'tabs.view',
+    'license': 'license.view', 'settings': 'settings.view'
+  };
+  var perm = permMap[tab];
+  if (perm && !can(perm)) { toast('🚫 Access denied', true, 'err'); return; }
+  currentTab = tab;
+  document.querySelectorAll('.page').forEach(function(p) { p.classList.remove('active'); });
+  document.getElementById('page-' + tab).classList.add('active');
+  document.querySelectorAll('.tab-btn').forEach(function(b) { b.classList.remove('active'); });
+  if (evt && evt.target) evt.target.classList.add('active');
+  if (tab === 'dashboard') initDashboard();
+  if (tab === 'users') loadUsersTable();
+  if (tab === 'reports') generateReport('daily');
+  if (tab === 'reconciliation') loadReconciliation();
+  if (tab === 'tabs') loadHeldTabs();
+  if (tab === 'rooms') loadRooms();
+  if (tab === 'license') { loadLicensesTable(); updateLicenseStats(); updateLicenseStatusBanner(); updateLicenseButtons(); }
+  if (tab === 'settings') { loadSettings(); updateRenewalBanner(); updateLicenseButtons(); }
+}
+
+function openStockManager() {
+  if (!can('stock.view')) { toast('Access denied', true, 'err'); return; }
+  const fullPath = window.location.href.replace('index.html', 'stock.html');
+  window.open(fullPath, 'StockManager', 'width=1300,height=850,menubar=no,toolbar=no,location=no,status=no');
+  toast('📦 Stock Manager opened', false, 'info');
+}
+
+// POS RENDERING
+function renderQuickPicks() {
+  var box = document.getElementById('quickPicks');
+  var html = '';
+  for (var i = 0; i < quickPicks.length; i++) html += '<button class="qp-btn" onclick="addToCart(' + quickPicks[i].id + ')">' + quickPicks[i].name + '</button>';
+  box.innerHTML = html;
+}
+
+function renderCategoryTabs() {
+  var box = document.getElementById('categoryTabs');
+  var html = '';
+  for (var i = 0; i < categories.length; i++) {
+    var cat = categories[i];
+    var label = cat === 'all' ? 'All Items' : cat;
+    var active = currentCategory === cat ? ' active' : '';
+    html += '<button class="cat-tab' + active + '" onclick="setCategory(\'' + cat + '\')">' + label + '</button>';
+  }
+  box.innerHTML = html;
+}
+
+function setCategory(cat) { currentCategory = cat; renderCategoryTabs(); renderProducts(); }
+
+function renderProducts(filter) {
+  var grid = document.getElementById('prodGrid');
+  var html = '';
+  var term = (filter || document.getElementById('searchInput').value || '').toLowerCase();
+  for (var i = 0; i < products.length; i++) {
+    var p = products[i];
+    if (currentCategory !== 'all' && p.category !== currentCategory) continue;
+    if (term && p.name.toLowerCase().indexOf(term) === -1) continue;
+    var stockText = p.keg ? 'Keg: ' + p.stock + '%' : 'Stock: ' + (p.stock || 0);
+    var kegBar = p.keg ? '<div class="keg-bar"><div class="keg-fill" style="width:' + p.stock + '%"></div></div>' : '';
+    html += '<div class="prod" onclick="addToCart(' + p.id + ')"><div class="prod-name">' + p.name + '</div><div class="prod-price">' + settings.currency + ' ' + p.price + '</div><div class="prod-stock">' + stockText + '</div>' + kegBar + '</div>';
+  }
+  grid.innerHTML = html || '<div style="grid-column:1/-1;text-align:center;padding:40px;color:var(--text-muted);">No items found</div>';
+}
+
+function filterProducts() { renderProducts(document.getElementById('searchInput').value); }
+
+function addToCart(id) {
+  if (!can('pos.view')) { toast('Access denied', true, 'err'); return; }
+  var prod = null;
+  for (var i = 0; i < products.length; i++) { if (products[i].id === id) { prod = products[i]; break; } }
+  if (!prod) return;
+  var found = false;
+  for (var j = 0; j < cart.length; j++) { if (cart[j].id === id) { cart[j].qty++; found = true; break; } }
+  if (!found) cart.push({ id: prod.id, name: prod.name, price: prod.price, qty: 1, category: prod.category });
+  renderCart();
+  toast('✓ ' + prod.name + ' added', false, 'ok');
+}
+
+function updateQty(id, delta) {
+  for (var i = 0; i < cart.length; i++) {
+    if (cart[i].id === id) { cart[i].qty += delta; if (cart[i].qty <= 0) cart.splice(i, 1); break; }
+  }
+  renderCart();
+}
+
+function removeItem(id) { for (var i = 0; i < cart.length; i++) { if (cart[i].id === id) { cart.splice(i, 1); break; } } renderCart(); }
+function clearCart() { if (cart.length && confirm('Clear tab?')) { cart = []; renderCart(); toast('Tab cleared', false, 'info'); } }
+
+function renderCart() {
+  var box = document.getElementById('cartItems');
+  var badge = document.getElementById('cartBadge');
+  var totalItems = 0;
+  for (var i = 0; i < cart.length; i++) totalItems += cart[i].qty;
+  badge.textContent = totalItems;
+  if (cart.length === 0) {
+    box.innerHTML = '<div class="empty-cart"><div class="icon">🛒</div><div>No items in tab</div></div>';
+    updateTotals(); updateRibbon(); return;
+  }
+  var html = '';
+  for (var i = 0; i < cart.length; i++) {
+    var item = cart[i];
+    html += '<div class="cart-item"><div class="cart-item-info"><div class="cart-item-name">' + item.name + '</div><div class="cart-item-price">' + settings.currency + ' ' + item.price + ' × ' + item.qty + '</div></div><div class="qty-controls"><button class="qty-btn" onclick="updateQty(' + item.id + ',-1)">−</button><span class="qty-value">' + item.qty + '</span><button class="qty-btn" onclick="updateQty(' + item.id + ',1)">+</button><button class="remove-btn" onclick="removeItem(' + item.id + ')">✕</button></div></div>';
+  }
+  box.innerHTML = html;
+  updateTotals(); updateRibbon();
+}
+
+function updateTotals() {
+  var sub = 0;
+  for (var i = 0; i < cart.length; i++) sub += cart[i].price * cart[i].qty;
+  var svc = serviceChargeEnabled ? sub * (settings.serviceCharge / 100) : 0;
+  var tot = sub + svc;
+  document.getElementById('subtotal').textContent = settings.currency + ' ' + sub.toFixed(2);
+  document.getElementById('service').textContent = settings.currency + ' ' + svc.toFixed(2);
+  var totalLabel = document.querySelector('.summary-row.total span:first-child');
+  if (window._activeRoomTabId) {
+    var r = rooms.find(function(x) { return x.id === window._activeRoomTabId; });
+    if (totalLabel && r) totalLabel.textContent = 'Total (Room ' + r.number + ')';
+  } else {
+    if (totalLabel) totalLabel.textContent = 'Total';
+  }
+  document.getElementById('total').textContent = settings.currency + ' ' + tot.toFixed(2);
+}
+
+function getTotal() {
+  var sub = 0;
+  for (var i = 0; i < cart.length; i++) sub += cart[i].price * cart[i].qty;
+  return sub + (serviceChargeEnabled ? sub * (settings.serviceCharge / 100) : 0);
+}
+
+// ROOMS
+function loadRooms() {
+  if (!can('rooms.view')) return;
+  var grid = document.getElementById('roomsGrid');
+  var empty = document.getElementById('roomsEmpty');
+  if (!grid) return;
+  var filtered = rooms;
+  if (currentRoomFilter !== 'all') filtered = rooms.filter(function(r) { return r.status === currentRoomFilter; });
+  var total = rooms.length;
+  var occupied = rooms.filter(function(r) { return r.status === 'occupied'; }).length;
+  var available = rooms.filter(function(r) { return r.status === 'available'; }).length;
+  document.getElementById('roomStatTotal').textContent = total;
+  document.getElementById('roomStatOccupied').textContent = occupied;
+  document.getElementById('roomStatAvailable').textContent = available;
+  document.getElementById('roomStatRate').textContent = total > 0 ? Math.round((occupied / total) * 100) + '%' : '0%';
+  if (filtered.length === 0) {
+    grid.innerHTML = '';
+    empty.style.display = 'block';
+    empty.querySelector('div:last-child').innerHTML = rooms.length === 0 ? 'No rooms yet. Click <strong>Add Room</strong> to get started.' : 'No rooms match this filter.';
+    return;
+  }
+  empty.style.display = 'none';
+  var html = '';
+  for (var i = 0; i < filtered.length; i++) {
+    var r = filtered[i];
+    var statusLabel = r.status.charAt(0).toUpperCase() + r.status.slice(1);
+    var info = '';
+    if (r.status === 'occupied' && r.guestName) {
+      info = '<div class="room-info"><strong>Guest:</strong> ' + r.guestName + '</div>';
+      if (r.checkIn) info += '<div class="room-info"><strong>Check-in:</strong> ' + new Date(r.checkIn).toLocaleString() + '</div>';
+      if (r.guestCount) info += '<div class="room-info"><strong>Guests:</strong> ' + r.guestCount + '</div>';
+      var tabTotal = (r.items || []).reduce(function(s, it) { return s + (it.price * it.qty); }, 0);
+      if (tabTotal > 0) info += '<div class="room-total"><span>Room Tab</span><span class="amount">KSH ' + tabTotal.toFixed(2) + '</span></div>';
+    } else if (r.status === 'reserved' && r.guestName) {
+      info = '<div class="room-info"><strong>Reserved for:</strong> ' + r.guestName + '</div>';
+      if (r.reservedAt) info += '<div class="room-info"><strong>Arrival:</strong> ' + r.reservedAt + '</div>';
+    } else if (r.status === 'cleaning') {
+      info = '<div class="room-info" style="color:var(--blue);">🧹 Being cleaned</div>';
+    } else {
+      info = '<div class="room-info" style="color:var(--green);">✨ Ready for guests</div>';
+    }
+    html += '<div class="room-card ' + r.status + '">' +
+      '<div class="room-header" onclick="openRoomDetail(' + r.id + ')"><div class="room-number">' + r.number + '</div><span class="room-status-pill ' + r.status + '">' + statusLabel + '</span></div>' +
+      '<div class="room-type" onclick="openRoomDetail(' + r.id + ')">' + r.type + ' · ' + r.capacity + ' pax · KSH ' + r.price + '/night</div>' +
+      '<div onclick="openRoomDetail(' + r.id + ')">' + info + '</div>' +
+      '<div style="display:flex; gap:6px; margin-top:12px; padding-top:12px; border-top:1px solid var(--border);">' +
+        (can('rooms.edit') ? '<button class="row-btn" style="flex:1; border-color:var(--gold); color:var(--gold);" onclick="event.stopPropagation(); openRoomModal(' + r.id + ')">✏️ Edit</button>' : '') +
+        (can('rooms.delete') ? '<button class="row-btn" style="border-color:var(--red); color:var(--red);" onclick="event.stopPropagation(); deleteRoom(' + r.id + ')" title="Delete">🗑️</button>' : '') +
+      '</div>' +
+      '</div>';
+  }
+  grid.innerHTML = html;
+  updateRibbon();
+}
+
+function filterRooms(filter, btn) {
+  currentRoomFilter = filter;
+  document.querySelectorAll('.room-filter-btn').forEach(function(b) { b.classList.remove('active'); });
+  if (btn) btn.classList.add('active');
+  loadRooms();
+}
+
+function openRoomModal(roomId) {
+  if (roomId && !can('rooms.edit')) { toast('Access denied', true, 'err'); return; }
+  if (!roomId && !can('rooms.create')) { toast('Access denied', true, 'err'); return; }
+  var isEdit = !!roomId;
+  document.getElementById('roomModalTitle').textContent = isEdit ? 'Edit Room' : 'Add Room';
+  document.getElementById('editRoomId').value = roomId || '';
+  if (isEdit) {
+    var r = rooms.find(function(x) { return x.id === roomId; });
+    if (!r) return;
+    document.getElementById('roomNumber').value = r.number;
+    document.getElementById('roomType').value = r.type;
+    document.getElementById('roomCapacity').value = r.capacity;
+    document.getElementById('roomPrice').value = r.price;
+    document.getElementById('roomDescription').value = r.description || '';
+  } else {
+    document.getElementById('roomNumber').value = '';
+    document.getElementById('roomType').value = 'Standard';
+    document.getElementById('roomCapacity').value = '2';
+    document.getElementById('roomPrice').value = '3000';
+    document.getElementById('roomDescription').value = '';
+  }
+  document.getElementById('roomModal').classList.add('active');
+}
+
+function closeRoomModal() { document.getElementById('roomModal').classList.remove('active'); }
+
+function saveRoom() {
+  var id = parseInt(document.getElementById('editRoomId').value) || 0;
+  var number = document.getElementById('roomNumber').value.trim();
+  var type = document.getElementById('roomType').value;
+  var capacity = parseInt(document.getElementById('roomCapacity').value) || 2;
+  var price = parseFloat(document.getElementById('roomPrice').value) || 0;
+  var description = document.getElementById('roomDescription').value.trim();
+  if (!number) { toast('Room number is required', true, 'err'); return; }
+  if (price <= 0) { toast('Price must be greater than 0', true, 'err'); return; }
+  var dup = rooms.find(function(r) { return r.number.toLowerCase() === number.toLowerCase() && r.id !== id; });
+  if (dup) { toast('A room with this number already exists', true, 'err'); return; }
+  if (id) {
+    var idx = rooms.findIndex(function(r) { return r.id === id; });
+    if (idx === -1) return;
+    rooms[idx].number = number;
+    rooms[idx].type = type;
+    rooms[idx].capacity = capacity;
+    rooms[idx].price = price;
+    rooms[idx].description = description;
+    toast('✅ Room updated', false, 'ok');
+  } else {
+    rooms.push({ id: Date.now(), number: number, type: type, capacity: capacity, price: price, description: description, status: 'available', guestName: '', guestCount: 0, checkIn: null, reservedAt: '', items: [], roomTabTotal: 0 });
+    toast('✅ Room added', false, 'ok');
+  }
+  localStorage.setItem('pub_rooms', JSON.stringify(rooms));
+  closeRoomModal();
+  loadRooms();
+}
+
+function openRoomDetail(id) {
+  var r = rooms.find(function(x) { return x.id === id; });
+  if (!r) return;
+  window._currentRoom = r;
+  var body = document.getElementById('roomDetailBody');
+  var title = document.getElementById('roomDetailTitle');
+  title.textContent = '🚪 Room ' + r.number + ' — ' + r.type;
+  var info = '<div style="background:var(--bg-dark); padding:16px; border-radius:12px; margin-bottom:16px;">' +
+    '<div style="display:flex; justify-content:space-between; margin-bottom:8px;"><span style="color:var(--text-muted);">Status</span><span style="color:var(--orange); font-weight:700;">' + r.status.toUpperCase() + '</span></div>' +
+    '<div style="display:flex; justify-content:space-between; margin-bottom:8px;"><span style="color:var(--text-muted);">Type</span><span>' + r.type + '</span></div>' +
+    '<div style="display:flex; justify-content:space-between; margin-bottom:8px;"><span style="color:var(--text-muted);">Capacity</span><span>' + r.capacity + ' pax</span></div>' +
+    '<div style="display:flex; justify-content:space-between; margin-bottom:8px;"><span style="color:var(--text-muted);">Price</span><span>KSH ' + r.price + '/night</span></div>';
+  if (r.description) info += '<div style="display:flex; justify-content:space-between;"><span style="color:var(--text-muted);">Notes</span><span>' + r.description + '</span></div>';
+  info += '</div>';
+  if (r.status === 'occupied') {
+    info += '<div class="form-group"><label>Guest Name</label><input type="text" id="detailGuestName" value="' + (r.guestName || '') + '"></div>';
+    info += '<div class="form-group"><label>Number of Guests</label><input type="number" id="detailGuestCount" value="' + (r.guestCount || 1) + '" min="1"></div>';
+    info += '<div class="form-group"><label>Check-in</label><input type="text" value="' + (r.checkIn ? new Date(r.checkIn).toLocaleString() : '—') + '" disabled></div>';
+    var tabTotal = (r.items || []).reduce(function(s, it) { return s + (it.price * it.qty); }, 0);
+    info += '<div style="background:var(--bg-dark); padding:12px; border-radius:10px; margin-top:12px;"><div style="display:flex; justify-content:space-between;"><span style="color:var(--text-muted); font-size:12px;">Room Tab Total</span><span style="color:var(--orange); font-weight:800; font-size:16px;">KSH ' + tabTotal.toFixed(2) + '</span></div></div>';
+  } else if (r.status === 'reserved') {
+    info += '<div class="form-group"><label>Reserved for</label><input type="text" id="detailGuestName" value="' + (r.guestName || '') + '"></div>';
+    info += '<div class="form-group"><label>Arrival</label><input type="text" id="detailReservedAt" value="' + (r.reservedAt || '') + '"></div>';
+  }
+  info += '<div style="margin-top:20px; padding-top:16px; border-top:1px solid var(--border);"><div style="font-size:11px; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.06em; font-weight:700; margin-bottom:10px;">Change Status</div><div style="display:grid; grid-template-columns:1fr 1fr; gap:8px;">';
+  if (r.status !== 'available') info += '<button class="row-btn" style="border-color:var(--green); color:var(--green); padding:10px;" onclick="setRoomStatus(' + r.id + ', \'available\')">✅ Available</button>';
+  else info += '<button class="row-btn" style="opacity:0.4; padding:10px; cursor:not-allowed;" disabled>✅ Available</button>';
+  if (r.status !== 'occupied') info += '<button class="row-btn" style="border-color:var(--orange); color:var(--orange); padding:10px;" onclick="setRoomStatus(' + r.id + ', \'occupied\')">🔴 Occupied</button>';
+  else info += '<button class="row-btn" style="opacity:0.4; padding:10px; cursor:not-allowed;" disabled>🔴 Occupied</button>';
+  if (r.status !== 'reserved') info += '<button class="row-btn" style="border-color:var(--purple); color:var(--purple); padding:10px;" onclick="setRoomStatus(' + r.id + ', \'reserved\')">🟣 Reserved</button>';
+  else info += '<button class="row-btn" style="opacity:0.4; padding:10px; cursor:not-allowed;" disabled>🟣 Reserved</button>';
+  if (r.status !== 'cleaning') info += '<button class="row-btn" style="border-color:var(--blue); color:var(--blue); padding:10px;" onclick="setRoomStatus(' + r.id + ', \'cleaning\')">🔵 Cleaning</button>';
+  else info += '<button class="row-btn" style="opacity:0.4; padding:10px; cursor:not-allowed;" disabled>🔵 Cleaning</button>';
+  info += '</div></div>';
+  body.innerHTML = info;
+  var actionContainer = document.querySelector('#roomDetailModal .modal-row');
+  var buttons = '<button class="cancel" onclick="closeRoomDetail()">Close</button>';
+  if (r.status === 'available') buttons += '<button class="confirm" onclick="checkInGuest(' + r.id + ')">🟢 Check In</button>';
+  else if (r.status === 'occupied') {
+    buttons += '<button class="confirm" onclick="openRoomTab(' + r.id + ')" style="background: linear-gradient(135deg, var(--orange), var(--orange-dim));">🛒 Open Tab</button>';
+    buttons += '<button class="danger" onclick="checkOutGuest(' + r.id + ')">🔴 Check Out</button>';
+  } else if (r.status === 'reserved') {
+    buttons += '<button class="confirm" onclick="checkInGuest(' + r.id + ')">🟢 Check In</button>';
+    buttons += '<button class="cancel" onclick="releaseReservation(' + r.id + ')">↩️ Release</button>';
+  } else if (r.status === 'cleaning') {
+    buttons += '<button class="confirm" onclick="setRoomStatus(' + r.id + ', \'available\')" style="background: linear-gradient(135deg, var(--green), #059669);">✅ Ready</button>';
+  }
+  if (can('rooms.edit')) buttons += '<button class="cancel" onclick="closeRoomDetail(); openRoomModal(' + r.id + ')" style="border-color:var(--gold); color:var(--gold);">✏️ Edit</button>';
+  if (can('rooms.delete')) buttons += '<button class="danger" onclick="closeRoomDetail(); deleteRoom(' + r.id + ')" style="flex:0 0 auto; padding:12px 16px;">🗑️</button>';
+  actionContainer.innerHTML = buttons;
+  actionContainer.style.flexWrap = 'wrap';
+  document.getElementById('roomDetailModal').classList.add('active');
+}
+
+function closeRoomDetail() { document.getElementById('roomDetailModal').classList.remove('active'); }
+
+function setRoomStatus(id, newStatus) {
+  if (!can('rooms.edit')) { toast('Access denied', true, 'err'); return; }
+  var r = rooms.find(function(x) { return x.id === id; });
+  if (!r) return;
+  if (newStatus === 'available' && r.status === 'occupied') {
+    if (!confirm('Room ' + r.number + ' is currently occupied by ' + r.guestName + '. Mark as available anyway? This will clear the guest data.')) return;
+    r.guestName = ''; r.guestCount = 0; r.checkIn = null; r.items = []; r.roomTabTotal = 0;
+  }
+  if (newStatus === 'available' && r.status === 'reserved') { r.guestName = ''; r.reservedAt = ''; }
+  if (newStatus === 'occupied' && r.status !== 'occupied') {
+    var name = prompt('Guest name for Room ' + r.number + ':', r.guestName || '');
+    if (!name) return;
+    var count = parseInt(prompt('Number of guests:', r.guestCount || '1')) || 1;
+    r.guestName = name; r.guestCount = count;
+    r.checkIn = new Date().toISOString();
+    r.items = r.items || [];
+  }
+  if (newStatus === 'reserved') {
+    var name = prompt('Reserve Room ' + r.number + ' for (guest name):', r.guestName || '');
+    if (!name) return;
+    var arrival = prompt('Expected arrival (e.g., "Tomorrow 6 PM"):', r.reservedAt || '');
+    r.guestName = name; r.reservedAt = arrival || '';
+  }
+  r.status = newStatus;
+  localStorage.setItem('pub_rooms', JSON.stringify(rooms));
+  loadRooms();
+  openRoomDetail(id);
+  toast('✅ Room ' + r.number + ' → ' + newStatus.toUpperCase(), false, 'ok');
+}
+
+function releaseReservation(id) {
+  if (!can('rooms.edit')) { toast('Access denied', true, 'err'); return; }
+  var r = rooms.find(function(x) { return x.id === id; });
+  if (!r) return;
+  if (!confirm('Release the reservation for Room ' + r.number + '?')) return;
+  r.status = 'available'; r.guestName = ''; r.reservedAt = '';
+  localStorage.setItem('pub_rooms', JSON.stringify(rooms));
+  loadRooms(); openRoomDetail(id);
+  toast('↩️ Reservation released', false, 'info');
+}
+
+function deleteRoom(id) {
+  if (!can('rooms.delete')) { toast('Access denied', true, 'err'); return; }
+  var r = rooms.find(function(x) { return x.id === id; });
+  if (!r) return;
+  if (!confirm('Delete Room ' + r.number + '? This cannot be undone.')) return;
+  rooms = rooms.filter(function(x) { return x.id !== id; });
+  localStorage.setItem('pub_rooms', JSON.stringify(rooms));
+  closeRoomDetail();
+  loadRooms();
+  toast('🗑️ Room ' + r.number + ' deleted', false, 'info');
+}
+
+function openRoomTab(id) {
+  var r = rooms.find(function(x) { return x.id === id; });
+  if (!r) return;
+  if (r.status !== 'occupied') { toast('Only occupied rooms can have a tab', true, 'err'); return; }
+  window._activeRoomTabId = id;
+  closeRoomDetail();
+  switchTab('pos', {target: document.querySelectorAll('.tab-btn[data-tab="pos"]')[0]});
+  showRoomTabBanner(r);
+  cart = (r.items || []).slice();
+  renderCart();
+  toast('🛒 Room ' + r.number + ' tab opened', false, 'info');
+}
+
+function showRoomTabBanner(r) {
+  var existing = document.getElementById('roomTabBanner');
+  if (existing) existing.remove();
+  var cartPanel = document.querySelector('.cart-panel');
+  if (!cartPanel) return;
+  var banner = document.createElement('div');
+  banner.id = 'roomTabBanner';
+  banner.style.cssText = 'background: linear-gradient(135deg, var(--orange-soft), rgba(255,122,0,0.02)); border: 1px solid var(--orange-dim); border-radius: 12px; padding: 12px 16px; margin: 12px; display: flex; justify-content: space-between; align-items: center;';
+  banner.innerHTML = '<div><div style="font-size:11px; color: var(--orange); text-transform: uppercase; letter-spacing: 0.06em; font-weight: 800;">🛏️ Adding to Room</div><div style="font-weight: 800; font-size: 16px; margin-top: 2px;">Room ' + r.number + ' — ' + r.guestName + '</div></div><button class="row-btn" style="border-color: var(--red); color: var(--red);" onclick="closeRoomTab()">✕ Close Tab</button>';
+  cartPanel.insertBefore(banner, cartPanel.firstChild);
+}
+
+function closeRoomTab() {
+  window._activeRoomTabId = null;
+  var banner = document.getElementById('roomTabBanner');
+  if (banner) banner.remove();
+  cart = [];
+  renderCart();
+  toast('Room tab closed', false, 'info');
+}
+
+function checkInGuest(id) {
+  var r = rooms.find(function(x) { return x.id === id; });
+  if (!r) return;
+  var name = prompt('Guest name:', r.guestName || '');
+  if (!name) return;
+  var count = parseInt(prompt('Number of guests:', r.guestCount || '1')) || 1;
+  r.guestName = name; r.guestCount = count;
+  r.status = 'occupied';
+  r.checkIn = new Date().toISOString();
+  r.items = r.items || [];
+  localStorage.setItem('pub_rooms', JSON.stringify(rooms));
+  closeRoomDetail();
+  loadRooms();
+  toast('🟢 Guest checked in to Room ' + r.number, false, 'ok');
+}
+
+function checkOutGuest(id) {
+  var r = rooms.find(function(x) { return x.id === id; });
+  if (!r) return;
+  var checkInTime = r.checkIn ? new Date(r.checkIn) : new Date();
+  var checkOutTime = new Date();
+  var hours = Math.ceil((checkOutTime - checkInTime) / (1000 * 60 * 60));
+  var nights = Math.max(1, Math.ceil(hours / 24));
+  var roomCharge = nights * r.price;
+  var foodDrinks = (r.items || []).reduce(function(s, it) { return s + (it.price * it.qty); }, 0);
+  var subtotal = roomCharge + foodDrinks;
+  var serviceCharge = serviceChargeEnabled ? subtotal * (settings.serviceCharge / 100) : 0;
+  var grandTotal = subtotal + serviceCharge;
+  if (!confirm('Check out ' + r.guestName + ' from Room ' + r.number + '?\n\nRoom (' + nights + ' night' + (nights > 1 ? 's' : '') + '): KSH ' + roomCharge.toFixed(2) + '\nFood & Drinks: KSH ' + foodDrinks.toFixed(2) + '\nService Charge: KSH ' + serviceCharge.toFixed(2) + '\n\nTOTAL: KSH ' + grandTotal.toFixed(2))) return;
+  var roomOrder = {
+    id: Date.now(), type: 'room',
+    roomNumber: r.number, guestName: r.guestName, guestCount: r.guestCount,
+    checkIn: r.checkIn, checkOut: checkOutTime.toISOString(), nights: nights,
+    roomType: r.type, roomPrice: r.price, roomCharge: roomCharge,
+    items: r.items || [], foodDrinksTotal: foodDrinks,
+    subtotal: subtotal, service: serviceCharge, serviceCharge: serviceCharge,
+    serviceChargePercent: serviceChargeEnabled ? settings.serviceCharge : 0,
+    serviceChargeApplied: serviceChargeEnabled,
+    total: grandTotal,
+    cashier: currentUser.name, cashierId: currentUser.id,
+    date: new Date().toLocaleDateString(), time: new Date().toLocaleTimeString(),
+    method: 'room', payments: { room: { amount: grandTotal } }
+  };
+  try {
+    var orders = JSON.parse(localStorage.getItem('pub_orders') || '[]');
+    orders.push(roomOrder);
+    localStorage.setItem('pub_orders', JSON.stringify(orders));
+  } catch(e) {}
+  currentReceiptOrder = roomOrder;
+  showRoomCheckoutReceipt(roomOrder);
+  r.status = 'cleaning'; r.guestName = ''; r.guestCount = 0; r.checkIn = null; r.items = []; r.roomTabTotal = 0;
+  localStorage.setItem('pub_rooms', JSON.stringify(rooms));
+  closeRoomDetail();
+  loadRooms();
+  updateRibbon();
+  toast('✅ Room ' + r.number + ' checked out — Bill: KSH ' + grandTotal.toFixed(2), false, 'ok');
+}
+
+function showRoomCheckoutReceipt(order) {
+  var html = '';
+  html += '<div style="text-align:center;border-bottom:1px dashed #000;padding-bottom:8px;margin-bottom:8px;">';
+  html += '<strong style="font-size:14px;">' + settings.clubName + '</strong><br>';
+  html += '<span style="font-size:10px;">' + settings.tagline + '</span><br>';
+  html += '<div style="font-size:12px; font-weight: bold; margin-top: 6px;">🛏️ ROOM CHECKOUT</div>';
+  html += '</div>';
+  html += '<div style="border-bottom:1px dashed #000; padding-bottom:8px; margin-bottom:8px;">';
+  html += '<div style="display:flex;justify-content:space-between;font-size:11px;"><span>Room</span><span><strong>' + order.roomNumber + ' (' + order.roomType + ')</strong></span></div>';
+  html += '<div style="display:flex;justify-content:space-between;font-size:11px;"><span>Guest</span><span>' + order.guestName + '</span></div>';
+  html += '<div style="display:flex;justify-content:space-between;font-size:11px;"><span>Check In</span><span>' + new Date(order.checkIn).toLocaleString() + '</span></div>';
+  html += '<div style="display:flex;justify-content:space-between;font-size:11px;"><span>Check Out</span><span>' + new Date(order.checkOut).toLocaleString() + '</span></div>';
+  html += '<div style="display:flex;justify-content:space-between;font-size:11px;"><span>Nights</span><span>' + order.nights + '</span></div>';
+  html += '<div style="display:flex;justify-content:space-between;font-size:11px;"><span>Cashier</span><span>' + order.cashier + '</span></div>';
+  html += '</div>';
+  html += '<div style="font-size:11px; font-weight: bold; margin-bottom: 4px;">ROOM CHARGES</div>';
+  html += '<div style="display:flex;justify-content:space-between;font-size:11px;padding:2px 0;"><span>' + order.nights + ' night(s) × KSH ' + order.roomPrice + '</span><span>' + order.roomCharge.toFixed(2) + '</span></div>';
+  if (order.items && order.items.length > 0) {
+    html += '<div style="font-size:11px; font-weight: bold; margin-top: 8px; margin-bottom: 4px;">FOOD & DRINKS</div>';
+    for (var i = 0; i < order.items.length; i++) {
+      var it = order.items[i];
+      html += '<div style="display:flex;justify-content:space-between;font-size:11px;padding:1px 0;"><span>' + it.name + ' x ' + it.qty + '</span><span>' + (it.price * it.qty).toFixed(2) + '</span></div>';
+    }
+  }
+  html += '<div style="border-top:1px dashed #000;margin-top:8px;padding-top:8px;">';
+  html += '<div style="display:flex;justify-content:space-between;font-size:11px;"><span>Subtotal</span><span>' + order.subtotal.toFixed(2) + '</span></div>';
+  if (order.serviceChargeApplied) html += '<div style="display:flex;justify-content:space-between;font-size:11px;"><span>Service (' + order.serviceChargePercent + '%)</span><span>' + order.serviceCharge.toFixed(2) + '</span></div>';
+  html += '<div style="display:flex;justify-content:space-between;font-size:14px;font-weight:bold;border-top:2px solid #000;margin-top:8px;padding-top:8px;"><span>TOTAL</span><span>' + settings.currency + ' ' + order.total.toFixed(2) + '</span></div>';
+  html += '</div>';
+  html += '<div style="text-align:center;margin-top:12px;font-size:10px;">Thank you for staying with us!</div>';
+  document.getElementById('receiptBody').innerHTML = html;
+  document.getElementById('receiptModal').classList.add('active');
+}
+
+function printRoomReceiptThermal(order) {
+  var pw = settings.paperSize === '80mm' ? '80mm' : '58mm';
+  var html = '<!DOCTYPE html><html><head><title>Room Receipt</title><style>';
+  html += '@page{size:' + pw + ' auto;margin:0}body{font-family:"Courier New",monospace;width:' + pw + ';margin:0;padding:4px;font-size:11px;color:#000}';
+  html += '.header{text-align:center;border-bottom:1px dashed #000;padding-bottom:6px;margin-bottom:6px}.header .name{font-size:14px;font-weight:bold}';
+  html += '.row{display:flex;justify-content:space-between;padding:2px 0}.total{font-size:14px;font-weight:bold;border-top:2px solid #000;margin-top:6px;padding-top:6px}';
+  html += '.section{font-weight:bold;margin-top:6px;font-size:11px}.footer{text-align:center;font-size:10px;margin-top:10px;border-top:1px dashed #000;padding-top:6px}</style></head><body>';
+  html += '<div class="header"><div class="name">' + settings.clubName + '</div><div>' + settings.tagline + '</div><div style="font-weight:bold;margin-top:4px;">ROOM CHECKOUT</div></div>';
+  html += '<div class="row"><span>Room</span><span><b>' + order.roomNumber + '</b></span></div>';
+  html += '<div class="row"><span>Type</span><span>' + order.roomType + '</span></div>';
+  html += '<div class="row"><span>Guest</span><span>' + order.guestName + '</span></div>';
+  html += '<div class="row"><span>Check In</span><span>' + new Date(order.checkIn).toLocaleString() + '</span></div>';
+  html += '<div class="row"><span>Check Out</span><span>' + new Date(order.checkOut).toLocaleString() + '</span></div>';
+  html += '<div class="row"><span>Nights</span><span>' + order.nights + '</span></div>';
+  html += '<div style="border-top:1px dashed #000;margin-top:6px;padding-top:6px;"></div>';
+  html += '<div class="section">ROOM CHARGES</div>';
+  html += '<div class="row"><span>' + order.nights + ' × KSH ' + order.roomPrice + '</span><span>' + order.roomCharge.toFixed(2) + '</span></div>';
+  if (order.items && order.items.length > 0) {
+    html += '<div class="section">FOOD & DRINKS</div>';
+    for (var i = 0; i < order.items.length; i++) {
+      var it = order.items[i];
+      html += '<div class="row"><span>' + it.name + ' x ' + it.qty + '</span><span>' + (it.price * it.qty).toFixed(2) + '</span></div>';
+    }
+  }
+  html += '<div style="border-top:1px dashed #000;margin-top:6px;padding-top:6px;">';
+  html += '<div class="row"><span>Subtotal</span><span>' + order.subtotal.toFixed(2) + '</span></div>';
+  if (order.serviceChargeApplied) html += '<div class="row"><span>Service (' + order.serviceChargePercent + '%)</span><span>' + order.serviceCharge.toFixed(2) + '</span></div>';
+  html += '<div class="row total"><span>TOTAL</span><span>' + settings.currency + ' ' + order.total.toFixed(2) + '</span></div>';
+  html += '</div>';
+  html += '<div class="footer">Thank you for staying with us!<br>We hope to see you again soon.</div>';
+  html += '</body></html>';
+  var iframe = document.getElementById('printFrame');
+  var doc = iframe.contentWindow.document;
+  doc.open(); doc.write(html); doc.close();
+  iframe.contentWindow.focus(); iframe.contentWindow.print();
+  toast('🖨️ Room receipt printed', false, 'ok');
+}
+
+// PAYMENT
+function openPay(method) {
+  if (!can('pos.view')) { toast('Access denied', true, 'err'); return; }
+  if (cart.length === 0) { toast('Tab empty', true, 'err'); return; }
+  if (window._activeRoomTabId) {
+    var r = rooms.find(function(x) { return x.id === window._activeRoomTabId; });
+    if (!r) { toast('Room not found', true, 'err'); return; }
+    var sub = cart.reduce(function(s, it) { return s + (it.price * it.qty); }, 0);
+    if (confirm('Add these items to Room ' + r.number + ' (' + r.guestName + ')?\n\nSubtotal: KSH ' + sub.toFixed(2) + '\n\nThe amount will be added to the room bill and settled at checkout.')) {
+      completeOrder({ room: { amount: sub } });
+    }
+    return;
+  }
+  pendingPayment = method;
+  var total = getTotal();
+  var title = document.getElementById('payTitle');
+  var totalEl = document.getElementById('payTotal');
+  var fields = document.getElementById('payFields');
+  totalEl.textContent = settings.currency + ' ' + total.toFixed(2);
+  if (method === 'mpesa') {
+    title.textContent = '📱 M-Pesa Payment';
+    fields.innerHTML = '<div class="form-group" style="margin-bottom:12px;"><label>M-Pesa Phone Number</label><input type="number" id="payPhone" placeholder="07XX XXX XXX" maxlength="10" oninput="if(this.value.length>10)this.value=this.value.slice(0,10)"></div><div class="form-group" style="margin-bottom:12px;"><label>M-Pesa Transaction Code</label><input type="text" id="mpesaRef" class="ref-input" placeholder="e.g., SFH4JK2M9P" maxlength="15" oninput="this.value = this.value.toUpperCase()"><div class="ref-note">⚠️ Required — Enter the M-Pesa confirmation code from customer SMS</div></div><div class="form-group"><label>Amount Received</label><input type="number" id="payAmount" value="' + total.toFixed(0) + '"></div>';
+  } else if (method === 'cash') {
+    title.textContent = '💵 Cash Payment';
+    fields.innerHTML = '<div class="form-group"><label>Amount Received</label><input type="number" id="payAmount" placeholder="0.00" autofocus></div>';
+  } else {
+    title.textContent = '⚡ Split Payment';
+    fields.innerHTML = '<div class="form-grid"><div class="form-group"><label>M-Pesa (KSH)</label><input type="number" id="splitMpesa" value="0" step="0.01" oninput="updateSplitBalance()" onblur="autoFillSplitRemaining(\'mpesa\')" onfocus="if(this.value===\'0\')this.select()"></div><div class="form-group"><label>Cash (KSH)</label><input type="number" id="splitCash" value="0" step="0.01" oninput="updateSplitBalance()" onblur="autoFillSplitRemaining(\'cash\')" onfocus="if(this.value===\'0\')this.select()"></div></div><div class="form-group" style="margin-top:12px;"><label>Card (KSH)</label><input type="number" id="splitCard" value="0" step="0.01" oninput="updateSplitBalance()" onblur="autoFillSplitRemaining(\'card\')" onfocus="if(this.value===\'0\')this.select()"></div><div id="splitBalanceDisplay" style="margin-top:16px; padding:12px 16px; border-radius:10px; background:var(--bg-dark); border:2px solid var(--orange-dim); display:flex; justify-content:space-between; align-items:center;"><span style="font-size:12px; color:var(--text-muted); text-transform:uppercase; font-weight:700;">Balance Remaining</span><span id="splitBalanceAmount" style="font-size:20px; font-weight:800; color:var(--orange);">KSH ' + total.toFixed(2) + '</span></div><div id="splitRefSection" style="margin-top:16px; display:none;"><div class="form-group" id="splitMpesaRefGroup" style="margin-bottom:12px; display:none;"><label>M-Pesa Phone</label><input type="number" id="splitMpesaPhone" placeholder="07XX XXX XXX" maxlength="10" oninput="if(this.value.length>10)this.value=this.value.slice(0,10)"><label style="margin-top:10px;">M-Pesa Transaction Code</label><input type="text" id="splitMpesaRef" class="ref-input" placeholder="e.g., SFH4JK2M9P" maxlength="15" oninput="this.value = this.value.toUpperCase()"></div><div class="form-group" id="splitCardRefGroup" style="display:none;"><label>Card Reference / Slip #</label><input type="text" id="splitCardRef" class="ref-input" placeholder="e.g., VISA-4521" maxlength="20" oninput="this.value = this.value.toUpperCase()"></div></div><div style="text-align:center; font-size:11px; color:var(--text-muted); margin-top:8px;">💡 Auto-fill: leave a field to fill the balance into the next empty one.</div>';
+  }
+  document.getElementById('payModal').classList.add('active');
+}
+
+function closePay() { document.getElementById('payModal').classList.remove('active'); pendingPayment = null; }
+
+var _splitAutoFillLock = false;
+
+function updateSplitBalance() {
+  if (_splitAutoFillLock) return;
+  _splitAutoFillLock = true;
+  try {
+    var mpesaEl = document.getElementById('splitMpesa');
+    var cashEl = document.getElementById('splitCash');
+    var cardEl = document.getElementById('splitCard');
+    var balanceEl = document.getElementById('splitBalanceAmount');
+    var displayBox = document.getElementById('splitBalanceDisplay');
+    var refSection = document.getElementById('splitRefSection');
+    var mpesaRefGroup = document.getElementById('splitMpesaRefGroup');
+    var cardRefGroup = document.getElementById('splitCardRefGroup');
+    if (!mpesaEl || !cashEl || !cardEl || !balanceEl) { _splitAutoFillLock = false; return; }
+    var totalDue = getTotal();
+    var m = parseFloat(mpesaEl.value) || 0;
+    var c = parseFloat(cashEl.value) || 0;
+    var k = parseFloat(cardEl.value) || 0;
+    var paid = m + c + k;
+    var balance = totalDue - paid;
+    if (Math.abs(balance) < 0.01) { balanceEl.style.color = 'var(--green)'; displayBox.style.borderColor = 'var(--green)'; balanceEl.textContent = '✓ PAID IN FULL'; }
+    else if (balance < 0) { balanceEl.style.color = 'var(--red)'; displayBox.style.borderColor = 'var(--red)'; balanceEl.textContent = 'OVER BY KSH ' + Math.abs(balance).toFixed(2); }
+    else { balanceEl.style.color = 'var(--orange)'; displayBox.style.borderColor = 'var(--orange-dim)'; balanceEl.textContent = 'KSH ' + balance.toFixed(2); }
+    if (refSection) {
+      if (m > 0) { refSection.style.display = 'block'; mpesaRefGroup.style.display = 'block'; } else mpesaRefGroup.style.display = 'none';
+      if (k > 0) { refSection.style.display = 'block'; cardRefGroup.style.display = 'block'; } else cardRefGroup.style.display = 'none';
+      if (m === 0 && k === 0) refSection.style.display = 'none';
+    }
+  } finally { _splitAutoFillLock = false; }
+}
+
+function autoFillSplitRemaining(sourceField) {
+  var mpesaEl = document.getElementById('splitMpesa');
+  var cashEl = document.getElementById('splitCash');
+  var cardEl = document.getElementById('splitCard');
+  if (!mpesaEl || !cashEl || !cardEl) return;
+  var totalDue = getTotal();
+  var m = parseFloat(mpesaEl.value) || 0;
+  var c = parseFloat(cashEl.value) || 0;
+  var k = parseFloat(cardEl.value) || 0;
+  var paid = m + c + k;
+  var balance = totalDue - paid;
+  if (balance <= 0.01) return;
+  var zeroFields = [];
+  if (m === 0 && sourceField !== 'mpesa') zeroFields.push('mpesa');
+  if (c === 0 && sourceField !== 'cash') zeroFields.push('cash');
+  if (k === 0 && sourceField !== 'card') zeroFields.push('card');
+  if (zeroFields.length === 0) return;
+  var targetId = 'split' + zeroFields[0].charAt(0).toUpperCase() + zeroFields[0].slice(1);
+  var targetEl = document.getElementById(targetId);
+  if (targetEl) { targetEl.value = balance.toFixed(2); updateSplitBalance(); toast('💰 Auto-filled KSH ' + balance.toFixed(2) + ' into ' + zeroFields[0].toUpperCase(), false, 'info'); }
+}
+
+function confirmPay() {
+  var total = getTotal();
+  if (pendingPayment === 'mpesa') {
+    var phone = (document.getElementById('payPhone') || {}).value || '';
+    var ref = (document.getElementById('mpesaRef') || {}).value || '';
+    var amount = parseFloat((document.getElementById('payAmount') || {}).value) || 0;
+    if (phone.length !== 10) { toast('Phone must be 10 digits', true, 'err'); return; }
+    if (!ref || ref.length < 4) { toast('⚠️ M-Pesa transaction code is required', true, 'err'); return; }
+    if (amount !== parseFloat(total.toFixed(2))) { toast('Amount must be ' + total.toFixed(2), true, 'err'); return; }
+    completeOrder({ mpesa: { amount: amount, phone: phone, ref: ref } });
+  } else if (pendingPayment === 'cash') {
+    var amount = parseFloat((document.getElementById('payAmount') || {}).value) || 0;
+    if (amount < total) { toast('Short by ' + settings.currency + ' ' + (total - amount).toFixed(2), true, 'err'); return; }
+    completeOrder({ cash: { amount: amount, change: amount - total } });
+  } else if (pendingPayment === 'split') {
+    var m = parseFloat((document.getElementById('splitMpesa') || {}).value) || 0;
+    var c = parseFloat((document.getElementById('splitCash') || {}).value) || 0;
+    var k = parseFloat((document.getElementById('splitCard') || {}).value) || 0;
+    var paid = m + c + k;
+    var mpesaPhone = '', mpesaRef = '';
+    if (m > 0) {
+      mpesaPhone = (document.getElementById('splitMpesaPhone') || {}).value || '';
+      mpesaRef = (document.getElementById('splitMpesaRef') || {}).value || '';
+      if (mpesaPhone.length !== 10) { toast('M-Pesa phone must be 10 digits', true, 'err'); return; }
+      if (!mpesaRef || mpesaRef.length < 4) { toast('⚠️ M-Pesa transaction code is required', true, 'err'); return; }
+    }
+    var cardRef = '';
+    if (k > 0) { cardRef = (document.getElementById('splitCardRef') || {}).value || ''; if (!cardRef || cardRef.length < 3) { toast('⚠️ Card reference is required', true, 'err'); return; } }
+    if (paid < total - 0.01) {
+      var remaining = total - paid;
+      var mpesaEl = document.getElementById('splitMpesa');
+      var cashEl = document.getElementById('splitCash');
+      var cardEl = document.getElementById('splitCard');
+      if (m === 0) { mpesaEl.value = remaining.toFixed(2); m = remaining; toast('💰 Auto-filled M-Pesa: KSH ' + remaining.toFixed(2), false, 'info'); }
+      else if (c === 0) { cashEl.value = remaining.toFixed(2); c = remaining; toast('💰 Auto-filled Cash: KSH ' + remaining.toFixed(2), false, 'info'); }
+      else if (k === 0) { cardEl.value = remaining.toFixed(2); k = remaining; toast('💰 Auto-filled Card: KSH ' + remaining.toFixed(2), false, 'info'); }
+      else { toast('Short: KSH ' + remaining.toFixed(2) + ' missing', true, 'err'); return; }
+      paid = m + c + k;
+    }
+    if (Math.abs(paid - total) > 0.01) { toast(paid < total ? 'Short: ' + (total - paid).toFixed(2) : 'Overpayment: ' + (paid - total).toFixed(2), true, 'err'); return; }
+    var payments = {};
+    if (m > 0) payments.mpesa = { amount: m, phone: mpesaPhone, ref: mpesaRef };
+    if (c > 0) payments.cash = { amount: c };
+    if (k > 0) payments.card = { amount: k, ref: cardRef };
+    completeOrder(payments);
+  }
+}
+
+function completeOrder(payments) {
+  var sub = 0;
+  for (var i = 0; i < cart.length; i++) sub += cart[i].price * cart[i].qty;
+  var svc = serviceChargeEnabled ? sub * (settings.serviceCharge / 100) : 0;
+  if (window._activeRoomTabId) {
+    var r = rooms.find(function(x) { return x.id === window._activeRoomTabId; });
+    if (!r) { toast('Room not found', true, 'err'); closePay(); return; }
+    if (!r.items) r.items = [];
+    for (var ci = 0; ci < cart.length; ci++) {
+      var newItem = cart[ci];
+      var existing = r.items.find(function(x) { return x.id === newItem.id; });
+      if (existing) existing.qty += newItem.qty;
+      else r.items.push({ id: newItem.id, name: newItem.name, price: newItem.price, qty: newItem.qty });
+    }
+    var roomItemTotal = r.items.reduce(function(s, it) { return s + (it.price * it.qty); }, 0);
+    r.roomTabTotal = roomItemTotal;
+    localStorage.setItem('pub_rooms', JSON.stringify(rooms));
+    closePay();
+    closeRoomTab();
+    loadRooms();
+    toast('✅ Items added to Room ' + r.number + ' — Total: KSH ' + roomItemTotal.toFixed(2), false, 'ok');
+    return;
+  }
+  var order = {
+    id: Date.now(),
+    cashier: currentUser.name,
+    cashierId: currentUser.id,
+    cashierRole: currentUser.role,
+    date: new Date().toLocaleDateString(),
+    time: new Date().toLocaleTimeString(),
+    items: cart.slice(),
+    subtotal: sub,
+    service: svc,
+    serviceChargeApplied: serviceChargeEnabled,
+    serviceChargePercent: serviceChargeEnabled ? settings.serviceCharge : 0,
+    total: sub + svc,
+    payments: payments,
+    method: Object.keys(payments)[0]
+  };
+  try {
+    var orders = JSON.parse(localStorage.getItem('pub_orders') || '[]');
+    orders.push(order);
+    localStorage.setItem('pub_orders', JSON.stringify(orders));
+  } catch(e) {}
+  for (var j = 0; j < cart.length; j++) {
+    for (var k = 0; k < products.length; k++) {
+      if (products[k].id === cart[j].id) { products[k].stock = Math.max(0, products[k].stock - cart[j].qty); break; }
+    }
+  }
+  localStorage.setItem('pub_products', JSON.stringify(products));
+  closePay();
+  currentReceiptOrder = order;
+  showReceiptPreview(order);
+  cart = []; renderCart(); renderProducts(); updateRibbon(); initDashboard();
+  if (settings.autoPrint === 'yes') setTimeout(function() { printReceiptThermal(); }, 300);
+}
+
+function showReceiptPreview(order) {
+  currentReceiptOrder = order;
+  document.getElementById('receiptBody').innerHTML = buildReceiptHTML(order);
+  document.getElementById('receiptModal').classList.add('active');
+}
+
+function buildReceiptHTML(order) {
+  var html = '';
+  html += '<div style="text-align:center;border-bottom:1px dashed #000;padding-bottom:8px;margin-bottom:8px;">';
+  html += '<strong style="font-size:14px;">' + settings.clubName + '</strong><br>';
+  html += '<span style="font-size:10px;">' + settings.tagline + '</span><br>';
+  html += '<span style="font-size:10px;">' + order.date + ' · ' + order.time + '</span><br>';
+  html += '<span style="font-size:10px;">Cashier: ' + order.cashier + '</span><br>';
+  html += '<span style="font-size:10px;">Order #' + order.id.toString().slice(-8) + '</span></div>';
+  for (var i = 0; i < order.items.length; i++) {
+    var it = order.items[i];
+    html += '<div style="display:flex;justify-content:space-between;font-size:11px;padding:2px 0;"><span>' + it.name + ' x ' + it.qty + '</span><span>' + (it.price * it.qty).toFixed(2) + '</span></div>';
+  }
+  html += '<div style="border-top:1px dashed #000;margin-top:8px;padding-top:8px;">';
+  html += '<div style="display:flex;justify-content:space-between;font-size:11px;"><span>Subtotal</span><span>' + order.subtotal.toFixed(2) + '</span></div>';
+  if (order.serviceChargeApplied) html += '<div style="display:flex;justify-content:space-between;font-size:11px;"><span>Service (' + order.serviceChargePercent + '%)</span><span>' + order.service.toFixed(2) + '</span></div>';
+  for (var method in order.payments) {
+    var p = order.payments[method];
+    html += '<div style="display:flex;justify-content:space-between;font-size:11px;"><span>' + method.toUpperCase() + '</span><span>' + p.amount.toFixed(2) + '</span></div>';
+    if (p.phone) html += '<div style="display:flex;justify-content:space-between;font-size:10px;color:#666;"><span>  Phone</span><span>' + p.phone + '</span></div>';
+    if (p.ref) html += '<div style="display:flex;justify-content:space-between;font-size:10px;color:#666;font-weight:bold;"><span>  Ref</span><span>' + p.ref + '</span></div>';
+    if (p.change) html += '<div style="display:flex;justify-content:space-between;font-size:11px;"><span>Change</span><span>' + p.change.toFixed(2) + '</span></div>';
+  }
+  html += '<div style="display:flex;justify-content:space-between;font-size:14px;font-weight:bold;border-top:2px solid #000;margin-top:8px;padding-top:8px;"><span>TOTAL</span><span>' + settings.currency + ' ' + order.total.toFixed(2) + '</span></div></div>';
+  html += '<div style="text-align:center;margin-top:12px;font-size:10px;">Thank you · Drink responsibly</div>';
+  return html;
+}
+
+function closeReceipt() { document.getElementById('receiptModal').classList.remove('active'); }
+
+function printReceiptThermal() {
+  if (!currentReceiptOrder) { toast('No receipt', true, 'err'); return; }
+  if (currentReceiptOrder.type === 'room') { printRoomReceiptThermal(currentReceiptOrder); return; }
+  var order = currentReceiptOrder;
+  var pw = settings.paperSize === '80mm' ? '80mm' : '58mm';
+  var html = '<!DOCTYPE html><html><head><title>Receipt</title><style>@page{size:' + pw + ' auto;margin:0}body{font-family:"Courier New",monospace;width:' + pw + ';margin:0;padding:4px;font-size:11px;color:#000}.header{text-align:center;border-bottom:1px dashed #000;padding-bottom:6px;margin-bottom:6px}.header .name{font-size:14px;font-weight:bold}.row{display:flex;justify-content:space-between;padding:2px 0}.total{font-size:14px;font-weight:bold;border-top:2px solid #000;margin-top:6px;padding-top:6px}.footer{text-align:center;font-size:10px;margin-top:10px;border-top:1px dashed #000;padding-top:6px}.ref{font-size:10px;color:#444;font-weight:bold;}</style></head><body>';
+  html += '<div class="header"><div class="name">' + settings.clubName + '</div><div>' + settings.tagline + '</div><div>' + order.date + ' · ' + order.time + '</div><div>Cashier: ' + order.cashier + '</div><div>Order #' + order.id.toString().slice(-8) + '</div></div>';
+  for (var i = 0; i < order.items.length; i++) {
+    var it = order.items[i];
+    html += '<div class="row"><span>' + it.name + ' x ' + it.qty + '</span><span>' + (it.price * it.qty).toFixed(2) + '</span></div>';
+  }
+  html += '<div style="border-top:1px dashed #000;margin-top:6px;padding-top:6px;">';
+  html += '<div class="row"><span>Subtotal</span><span>' + order.subtotal.toFixed(2) + '</span></div>';
+  if (order.serviceChargeApplied) html += '<div class="row"><span>Service (' + order.serviceChargePercent + '%)</span><span>' + order.service.toFixed(2) + '</span></div>';
+  for (var method in order.payments) {
+    var p = order.payments[method];
+    html += '<div class="row"><span>' + method.toUpperCase() + '</span><span>' + p.amount.toFixed(2) + '</span></div>';
+    if (p.phone) html += '<div class="row" style="font-size:9px;color:#666;"><span>  Phone</span><span>' + p.phone + '</span></div>';
+    if (p.ref) html += '<div class="row ref"><span>  Ref</span><span>' + p.ref + '</span></div>';
+    if (p.change) html += '<div class="row"><span>Change</span><span>' + p.change.toFixed(2) + '</span></div>';
+  }
+  html += '<div class="row total"><span>TOTAL</span><span>' + settings.currency + ' ' + order.total.toFixed(2) + '</span></div></div>';
+  html += '<div class="footer">Thank you · Drink responsibly</div></body></html>';
+  var iframe = document.getElementById('printFrame');
+  var doc = iframe.contentWindow.document;
+  doc.open(); doc.write(html); doc.close();
+  iframe.contentWindow.focus(); iframe.contentWindow.print();
+  toast('🖨️ Printed', false, 'ok');
+}
+
+function printReportThermal() {
+  if (!can('reports.print')) { toast('Access denied', true, 'err'); return; }
+  var orders = JSON.parse(localStorage.getItem('pub_orders') || '[]');
+  var today = new Date().toLocaleDateString();
+  var todayOrders = orders.filter(function(o) { return o.date === today; });
+  var total = todayOrders.reduce(function(s, o) { return s + o.total; }, 0);
+  var html = '<!DOCTYPE html><html><head><title>Z-Report</title><style>@page{size:58mm auto;margin:0}body{font-family:"Courier New",monospace;width:58mm;margin:0;padding:4px;font-size:11px}.center{text-align:center}.row{display:flex;justify-content:space-between;padding:2px 0}.bold{font-weight:bold}.line{border-top:1px dashed #000;margin:6px 0;padding-top:6px}.big{font-size:14px;font-weight:bold}</style></head><body>';
+  html += '<div class="center"><div class="big">' + settings.clubName + '</div><div>Daily Z-Report</div><div>' + today + '</div></div><div class="line"></div>';
+  html += '<div class="row bold"><span>Total Orders</span><span>' + todayOrders.length + '</span></div>';
+  html += '<div class="row bold"><span>Total Revenue</span><span>' + settings.currency + ' ' + total.toFixed(2) + '</span></div>';
+  html += '<div class="line"></div><div class="center" style="font-size:10px;">-- END --</div></body></html>';
+  var iframe = document.getElementById('printFrame');
+  var doc = iframe.contentWindow.document;
+  doc.open(); doc.write(html); doc.close();
+  iframe.contentWindow.focus(); iframe.contentWindow.print();
+  toast('🖨️ Z-Report printed', false, 'ok');
+}
+
+function printReportA4() {
+  if (!can('reports.print')) { toast('Access denied', true, 'err'); return; }
+  var orders = JSON.parse(localStorage.getItem('pub_orders') || '[]');
+  var html = '<!DOCTYPE html><html><head><title>Sales Report</title><style>@page{size:A4;margin:15mm}body{font-family:Arial}h1{text-align:center;color:#ff7a00}table{width:100%;border-collapse:collapse;margin-top:15px}th,td{border:1px solid #ddd;padding:8px;text-align:left;font-size:12px}th{background:#ff7a00;color:white}.ref{font-family:monospace;background:#fff7ed;color:#c2410c;padding:2px 6px;border-radius:3px;font-weight:bold;}</style></head><body>';
+  html += '<h1>🍺 ' + settings.clubName + ' - Sales Report</h1><p style="text-align:center;">Generated: ' + new Date().toLocaleString() + '</p>';
+  html += '<table><tr><th>Order #</th><th>Date</th><th>Time</th><th>Cashier</th><th>Payment</th><th>Reference</th><th>Total</th></tr>';
+  orders.slice().reverse().forEach(function(o) {
+    var ref = '';
+    for (var m in o.payments) { if (o.payments[m].ref) ref += (ref ? ' | ' : '') + o.payments[m].ref; }
+    html += '<tr><td>#' + o.id.toString().slice(-6) + '</td><td>' + o.date + '</td><td>' + o.time + '</td><td>' + o.cashier + '</td><td>' + o.method + '</td><td>' + (ref ? '<span class="ref">' + ref + '</span>' : '—') + '</td><td>' + settings.currency + ' ' + o.total.toFixed(2) + '</td></tr>';
+  });
+  html += '</table></body></html>';
+  var iframe = document.getElementById('printFrame');
+  var doc = iframe.contentWindow.document;
+  doc.open(); doc.write(html); doc.close();
+  iframe.contentWindow.focus(); iframe.contentWindow.print();
+  toast('🖨️ A4 report printed', false, 'ok');
+}
+
+function testPrint() {
+  if (!can('settings.view')) { toast('Access denied', true, 'err'); return; }
+  var html = '<!DOCTYPE html><html><head><title>Test</title><style>@page{size:58mm auto;margin:0}body{font-family:"Courier New",monospace;width:58mm;margin:0;padding:8px;font-size:11px;text-align:center}</style></head><body><div style="border:2px dashed #000;padding:10px;"><strong style="font-size:14px;">TEST PRINT</strong><br>🖨️ Thermal Printer<br>' + settings.clubName + '<br>Paper: ' + settings.paperSize + '<br>' + new Date().toLocaleString() + '<br><br>SUCCESS!</div></body></html>';
+  var iframe = document.getElementById('printFrame');
+  var doc = iframe.contentWindow.document;
+  doc.open(); doc.write(html); doc.close();
+  iframe.contentWindow.focus(); iframe.contentWindow.print();
+  toast('🖨️ Test print sent', false, 'ok');
+}
+
+// DASHBOARD
+function initDashboard() {
+  if (!can('dashboard.view')) return;
+  try {
+    var orders = JSON.parse(localStorage.getItem('pub_orders') || '[]');
+    var today = new Date().toLocaleDateString();
+    var todayOrders = orders.filter(function(o) { return o.date === today; });
+    var todayTotal = todayOrders.reduce(function(s, o) { return s + o.total; }, 0);
+    var totalSales = orders.reduce(function(s, o) { return s + o.total; }, 0);
+    var avgOrder = orders.length > 0 ? totalSales / orders.length : 0;
+    var occupied = rooms.filter(function(r) { return r.status === 'occupied'; }).length;
+    document.getElementById('dashStats').innerHTML = '<div class="stat-card"><div class="label">Today\'s Revenue</div><div class="value orange">' + settings.currency + ' ' + todayTotal.toFixed(0) + '</div><div class="sub">' + todayOrders.length + ' orders</div></div><div class="stat-card"><div class="label">Total Revenue</div><div class="value">' + settings.currency + ' ' + totalSales.toFixed(0) + '</div></div><div class="stat-card"><div class="label">Total Orders</div><div class="value">' + orders.length + '</div></div><div class="stat-card"><div class="label">Rooms Occupied</div><div class="value">' + occupied + '/' + rooms.length + '</div></div>';
+    var last7 = [], dailySales = {};
+    for (var i = 6; i >= 0; i--) { var d = new Date(); d.setDate(d.getDate() - i); var ds = d.toLocaleDateString(); last7.push(ds); dailySales[ds] = 0; }
+    orders.forEach(function(o) { if (dailySales[o.date] !== undefined) dailySales[o.date] += o.total; });
+    if (window.salesChartObj) window.salesChartObj.destroy();
+    window.salesChartObj = new Chart(document.getElementById('salesChart'), { type: 'line', data: { labels: last7.map(function(d){return d.slice(0,5)}), datasets: [{ label: 'Sales', data: last7.map(function(d){return dailySales[d]}), borderColor: '#ff7a00', backgroundColor: 'rgba(255,122,0,0.15)', fill: true, tension: 0.4, borderWidth: 3 }] }, options: { responsive: true, maintainAspectRatio: true, plugins: { legend: { display: false } }, scales: { x: { ticks: { color: '#b8b8b8' }, grid: { color: '#2a2a2a' } }, y: { ticks: { color: '#b8b8b8' }, grid: { color: '#2a2a2a' } } } } });
+    var methods = { mpesa: 0, cash: 0, split: 0, room: 0 };
+    orders.forEach(function(o) { if (methods[o.method] !== undefined) methods[o.method] += o.total; });
+    if (window.paymentChartObj) window.paymentChartObj.destroy();
+    window.paymentChartObj = new Chart(document.getElementById('paymentChart'), { type: 'doughnut', data: { labels: ['M-Pesa', 'Cash', 'Split', 'Room'], datasets: [{ data: [methods.mpesa, methods.cash, methods.split, methods.room], backgroundColor: ['#10b981', '#3b82f6', '#8b5cf6', '#ff7a00'], borderWidth: 0 }] }, options: { responsive: true, maintainAspectRatio: true, plugins: { legend: { labels: { color: '#b8b8b8' } } } } });
+    var cashiers = {};
+    orders.forEach(function(o) { if (!cashiers[o.cashier]) cashiers[o.cashier] = 0; cashiers[o.cashier] += o.total; });
+    if (window.cashierChartObj) window.cashierChartObj.destroy();
+    window.cashierChartObj = new Chart(document.getElementById('cashierChart'), { type: 'bar', data: { labels: Object.keys(cashiers), datasets: [{ label: 'Sales', data: Object.values(cashiers), backgroundColor: '#ff7a00', borderRadius: 8 }] }, options: { responsive: true, maintainAspectRatio: true, plugins: { legend: { display: false } }, scales: { x: { ticks: { color: '#b8b8b8' }, grid: { display: false } }, y: { ticks: { color: '#b8b8b8' }, grid: { color: '#2a2a2a' } } } } });
+    var itemCount = {};
+    orders.forEach(function(o) { (o.items || []).forEach(function(it) { if (!itemCount[it.name]) itemCount[it.name] = 0; itemCount[it.name] += it.qty; }); });
+    var sorted = Object.keys(itemCount).sort(function(a, b) { return itemCount[b] - itemCount[a]; }).slice(0, 5);
+    if (window.topItemsChartObj) window.topItemsChartObj.destroy();
+    window.topItemsChartObj = new Chart(document.getElementById('topItemsChart'), { type: 'bar', data: { labels: sorted, datasets: [{ label: 'Units', data: sorted.map(function(k){return itemCount[k]}), backgroundColor: '#8b5cf6', borderRadius: 8 }] }, options: { responsive: true, maintainAspectRatio: true, indexAxis: 'y', plugins: { legend: { display: false } }, scales: { x: { ticks: { color: '#b8b8b8' }, grid: { color: '#2a2a2a' } }, y: { ticks: { color: '#b8b8b8' }, grid: { display: false } } } } });
+  } catch(e) { console.log('Dashboard error:', e); }
+}
+
+function refreshDashboard() { if (!can('dashboard.view')) { toast('Access denied', true, 'err'); return; } initDashboard(); toast('Refreshed', false, 'ok'); }
+function exportDashboard() { if (!can('dashboard.view')) { toast('Access denied', true, 'err'); return; } var data = { generated: new Date().toISOString(), orders: JSON.parse(localStorage.getItem('pub_orders') || '[]'), users: users, products: products, rooms: rooms, settings: settings }; downloadJSON(data, 'dashboard-export.json'); }
+
+// USERS
+function loadUsersTable() {
+  if (!can('users.view')) return;
+  var tbody = document.getElementById('usersTableBody');
+  if (!tbody) return;
+  var html = '';
+  for (var i = 0; i < users.length; i++) {
+    var u = users[i];
+    var badge = u.status === 'active' ? 'badge-green' : 'badge-red';
+    var roleBadge = u.role === 'admin' ? 'badge-gold' : (u.role === 'manager' ? 'badge-purple' : 'badge-blue');
+    var roleIcon = u.role === 'admin' ? '👑' : (u.role === 'manager' ? '📊' : '👤');
+    var lastLogin = u.lastLogin ? new Date(u.lastLogin).toLocaleString() : 'Never';
+    html += '<tr><td>#' + u.id + '</td><td><strong>' + u.username + '</strong></td><td>' + u.name + '</td><td><span class="badge ' + roleBadge + '">' + roleIcon + ' ' + u.role + '</span></td><td><span class="badge ' + badge + '">' + u.status + '</span></td><td style="font-size:11px;color:var(--text-muted);">' + lastLogin + '</td><td><div class="row-actions">';
+    if (can('users.edit')) html += '<button class="row-btn" onclick="editUser(' + u.id + ')">✏️ Edit</button>';
+    if (can('users.activate')) html += '<button class="row-btn" onclick="toggleUserStatus(' + u.id + ')">' + (u.status === 'active' ? '⏸️' : '▶️') + '</button>';
+    if (can('users.delete') && u.username !== 'admin') html += '<button class="row-btn danger" onclick="deleteUser(' + u.id + ')">🗑️</button>';
+    if (u.username === 'admin') html += '<span style="font-size:11px;color:var(--text-muted);margin-left:6px;">🔒</span>';
+    html += '</div></td></tr>';
+  }
+  tbody.innerHTML = html;
+}
+
+function openUserModal() {
+  if (!can('users.create')) { toast('Access denied', true, 'err'); return; }
+  document.getElementById('userModalTitle').textContent = 'Add User';
+  ['editUserId','userUsername','userFullName','userPassword'].forEach(function(id) { var el = document.getElementById(id); if (el) el.value = ''; });
+  document.getElementById('userRole').value = 'cashier';
+  document.getElementById('userStatus').value = 'active';
+  document.getElementById('userModal').classList.add('active');
+}
+
+function editUser(id) {
+  if (!can('users.edit')) { toast('Access denied', true, 'err'); return; }
+  var u = null;
+  for (var i = 0; i < users.length; i++) { if (users[i].id === id) { u = users[i]; break; } }
+  if (!u) return;
+  document.getElementById('userModalTitle').textContent = 'Edit User';
+  document.getElementById('editUserId').value = u.id;
+  document.getElementById('userUsername').value = u.username;
+  document.getElementById('userFullName').value = u.name;
+  document.getElementById('userPassword').value = u.password;
+  document.getElementById('userRole').value = u.role;
+  document.getElementById('userStatus').value = u.status;
+  document.getElementById('userModal').classList.add('active');
+}
+
+function saveUser() {
+  var id = document.getElementById('editUserId').value;
+  var username = document.getElementById('userUsername').value.trim();
+  var name = document.getElementById('userFullName').value.trim();
+  var password = document.getElementById('userPassword').value;
+  var role = document.getElementById('userRole').value;
+  var status = document.getElementById('userStatus').value;
+  if (!username || !name || !password) { toast('All fields required', true, 'err'); return; }
+  if (id && parseInt(id) < 0) { toast('🚫 This account is protected', true, 'err'); return; }
+  if (currentUser.role === 'manager' && role === 'admin') { toast('🚫 Managers cannot create admin users', true, 'err'); return; }
+  if (username.toLowerCase() === 'superadmin') { toast('🚫 That username is reserved', true, 'err'); return; }
+  if (id) {
+    if (!can('users.edit')) { toast('Access denied', true, 'err'); return; }
+    for (var i = 0; i < users.length; i++) {
+      if (users[i].id == id) { users[i].username = username; users[i].name = name; users[i].password = password; users[i].role = role; users[i].status = status; break; }
+    }
+  } else {
+    if (!can('users.create')) { toast('Access denied', true, 'err'); return; }
+    var newId = Math.max.apply(null, users.map(function(u) { return u.id; }).concat([0])) + 1;
+    users.push({ id: newId, username: username, password: password, name: name, role: role, status: status, lastLogin: null });
+  }
+  localStorage.setItem('pub_users', JSON.stringify(users));
+  loadUsersTable(); closeUserModal(); toast('User saved', false, 'ok');
+}
+
+function toggleUserStatus(id) {
+  if (!can('users.activate')) { toast('Access denied', true, 'err'); return; }
+  var target = null;
+  for (var i = 0; i < users.length; i++) { if (users[i].id === id) { target = users[i]; break; } }
+  if (!target) return;
+  if (target.username === 'admin') { toast('Cannot deactivate the main admin', true, 'err'); return; }
+  if (currentUser.role === 'manager' && target.role === 'admin') { toast('Managers cannot modify admins', true, 'err'); return; }
+  target.status = target.status === 'active' ? 'inactive' : 'active';
+  localStorage.setItem('pub_users', JSON.stringify(users));
+  loadUsersTable(); toast('User status updated', false, 'ok');
+}
+
+function deleteUser(id) {
+  if (!can('users.delete')) { toast('🚫 Only Admin can delete users', true, 'err'); return; }
+  if (!confirm('Delete user?')) return;
+  users = users.filter(function(u) { return u.id !== id; });
+  localStorage.setItem('pub_users', JSON.stringify(users));
+  loadUsersTable(); toast('Deleted', false, 'info');
+}
+
+function closeUserModal() { document.getElementById('userModal').classList.remove('active'); }
+function exportUsers() { if (!can('users.view')) { toast('Access denied', true, 'err'); return; } downloadJSON(users, 'users-export.json'); }
+function importUsers() { if (!can('users.create')) { toast('Access denied', true, 'err'); return; } document.getElementById('importText').value = ''; document.getElementById('importModal').classList.add('active'); }
+function closeImportModal() { document.getElementById('importModal').classList.remove('active'); }
+function doImport() {
+  if (!can('users.create')) { toast('Access denied', true, 'err'); return; }
+  try {
+    var data = JSON.parse(document.getElementById('importText').value);
+    if (Array.isArray(data)) { users = data; localStorage.setItem('pub_users', JSON.stringify(users)); loadUsersTable(); closeImportModal(); toast('Users imported', false, 'ok'); }
+    else toast('Invalid JSON', true, 'err');
+  } catch(e) { toast('Invalid JSON', true, 'err'); }
+}
+
+// REPORTS
+function generateReport(type) {
+  if (!can('reports.view')) return;
+  var orders = JSON.parse(localStorage.getItem('pub_orders') || '[]');
+  var filtered = orders;
+  var today = new Date();
+  if (type === 'daily') filtered = orders.filter(function(o) { return o.date === today.toLocaleDateString(); });
+  else if (type === 'weekly') { var wa = new Date(); wa.setDate(wa.getDate() - 7); filtered = orders.filter(function(o) { return new Date(o.date) >= wa; }); }
+  else if (type === 'monthly') { var ma = new Date(); ma.setMonth(ma.getMonth() - 1); filtered = orders.filter(function(o) { return new Date(o.date) >= ma; }); }
+  var total = filtered.reduce(function(s, o) { return s + o.total; }, 0);
+  var avg = filtered.length > 0 ? total / filtered.length : 0;
+  document.getElementById('reportStats').innerHTML = '<div class="stat-card"><div class="label">' + type.toUpperCase() + ' Revenue</div><div class="value orange">' + settings.currency + ' ' + total.toFixed(0) + '</div></div><div class="stat-card"><div class="label">Orders</div><div class="value">' + filtered.length + '</div></div><div class="stat-card"><div class="label">Average Order</div><div class="value">' + settings.currency + ' ' + avg.toFixed(0) + '</div></div>';
+  var tbody = document.getElementById('reportTableBody');
+  if (filtered.length === 0) { tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;padding:40px;color:var(--text-muted);">No orders</td></tr>'; return; }
+  var html = '';
+  filtered.slice().reverse().forEach(function(o) {
+    var itemCount = (o.items || []).reduce(function(s, it) { return s + it.qty; }, 0);
+    var ref = '';
+    for (var m in o.payments) {
+      if (o.payments[m].ref) ref += (ref ? '<br>' : '') + '<span class="ref-code">' + o.payments[m].ref + '</span>';
+      else if (o.payments[m].phone) ref += (ref ? '<br>' : '') + '<span style="font-size:10px;color:var(--text-muted);">📱 ' + o.payments[m].phone + '</span>';
+    }
+    if (o.type === 'room') ref = '<span class="ref-code">ROOM ' + o.roomNumber + '</span>';
+    html += '<tr><td>#' + o.id.toString().slice(-6) + '</td><td>' + o.date + '</td><td>' + o.time + '</td><td>' + o.cashier + '</td><td>' + itemCount + '</td><td>' + o.method.toUpperCase() + '</td><td>' + (ref || '—') + '</td><td style="color:var(--orange);font-weight:700;">' + settings.currency + ' ' + o.total.toFixed(2) + '</td></tr>';
+  });
+  tbody.innerHTML = html;
+}
+
+function exportReport() { if (!can('reports.export')) { toast('Access denied', true, 'err'); return; } var orders = JSON.parse(localStorage.getItem('pub_orders') || '[]'); downloadJSON(orders, 'reports-export.json'); }
+
+// ============ RECONCILIATION ============
+function loadReconciliation() {
+  if (!can('reconciliation.view')) { toast('Access denied', true, 'err'); return; }
+  var dateEl = document.getElementById('reconDate');
+  if (!dateEl.value) { var today = new Date(); dateEl.value = today.toISOString().slice(0, 10); }
+  var selectedDate = dateEl.value;
+  var dateObj = new Date(selectedDate + 'T00:00:00');
+  var localDateStr = dateObj.toLocaleDateString();
+  var orders = JSON.parse(localStorage.getItem('pub_orders') || '[]');
+  var dayOrders = orders.filter(function(o) { return o.date === localDateStr; });
+  var reconData = JSON.parse(localStorage.getItem('pub_reconciliation') || '{}');
+  var dayRecon = reconData[selectedDate] || { verified: {}, locked: false, by: '', notes: '', openingFloat: 0, actualCash: 0 };
+
+  var totals = { mpesa: 0, cash: 0, card: 0, room: 0, all: 0 };
+  var mpesaList = [];
+  var cardList = [];
+  var seenMpesaCodes = {};
+  dayOrders.forEach(function(o) {
+    totals.all += o.total;
+    if (o.type === 'room') { totals.room += o.total; return; }
+    for (var m in o.payments) {
+      var p = o.payments[m];
+      if (m === 'mpesa') {
+        totals.mpesa += p.amount;
+        var isDup = seenMpesaCodes[p.ref] ? true : false;
+        seenMpesaCodes[p.ref] = true;
+        mpesaList.push({ orderId: o.id, time: o.time, cashier: o.cashier, phone: p.phone || '—', ref: p.ref || '—', amount: p.amount, duplicate: isDup });
+      } else if (m === 'card') {
+        totals.card += p.amount;
+        cardList.push({ orderId: o.id, time: o.time, cashier: o.cashier, ref: p.ref || '—', amount: p.amount });
+      } else if (m === 'cash') { totals.cash += p.amount; }
+      else if (m === 'room') { totals.room += p.amount; }
+    }
+  });
+  var verifiedCount = Object.keys(dayRecon.verified || {}).length;
+  var totalToVerify = mpesaList.length + cardList.length;
+  var progressPct = totalToVerify > 0 ? Math.round((verifiedCount / totalToVerify) * 100) : 100;
+  document.getElementById('reconSummary').innerHTML =
+    '<div class="stat-card"><div class="label">Total Sales</div><div class="value orange">' + settings.currency + ' ' + totals.all.toFixed(0) + '</div><div class="sub">' + dayOrders.length + ' orders</div></div>' +
+    '<div class="stat-card"><div class="label">📱 M-Pesa</div><div class="value">' + settings.currency + ' ' + totals.mpesa.toFixed(0) + '</div><div class="sub">' + mpesaList.length + ' txns</div></div>' +
+    '<div class="stat-card"><div class="label">💳 Card</div><div class="value">' + settings.currency + ' ' + totals.card.toFixed(0) + '</div><div class="sub">' + cardList.length + ' txns</div></div>' +
+    '<div class="stat-card"><div class="label">💵 Cash</div><div class="value">' + settings.currency + ' ' + totals.cash.toFixed(0) + '</div></div>' +
+    '<div class="stat-card"><div class="label">🚪 Room</div><div class="value">' + settings.currency + ' ' + totals.room.toFixed(0) + '</div></div>' +
+    '<div class="stat-card"><div class="label">✓ Verified</div><div class="value" style="color:' + (progressPct === 100 ? 'var(--green)' : 'var(--orange)') + ';">' + progressPct + '%</div><div class="sub">' + verifiedCount + ' of ' + totalToVerify + '</div></div>';
+
+  document.getElementById('reconOpeningFloat').value = dayRecon.openingFloat || 0;
+  document.getElementById('reconCashSales').value = totals.cash.toFixed(2);
+  document.getElementById('reconActualCash').value = dayRecon.actualCash || 0;
+  updateCashVariance();
+
+  var mpesaBody = document.getElementById('mpesaReconBody');
+  var mpesaEmpty = document.getElementById('mpesaReconEmpty');
+  if (mpesaList.length === 0) { mpesaBody.innerHTML = ''; mpesaEmpty.style.display = 'block'; }
+  else {
+    mpesaEmpty.style.display = 'none';
+    var mhtml = '';
+    mpesaList.forEach(function(t) {
+      var key = 'mpesa_' + t.orderId;
+      var isVerified = dayRecon.verified && dayRecon.verified[key];
+      var isDup = t.duplicate;
+      mhtml += '<tr style="' + (isDup ? 'background: rgba(239,68,68,0.08);' : '') + '">';
+      mhtml += '<td>#' + t.orderId.toString().slice(-6) + '</td>';
+      mhtml += '<td>' + t.time + '</td>';
+      mhtml += '<td>' + t.cashier + '</td>';
+      mhtml += '<td style="font-family:monospace;">' + t.phone + '</td>';
+      mhtml += '<td><span class="ref-code">' + t.ref + '</span>' + (isDup ? ' <span class="badge badge-red">DUPLICATE</span>' : '') + '</td>';
+      mhtml += '<td style="font-weight:700; color:var(--orange);">' + settings.currency + ' ' + t.amount.toFixed(2) + '</td>';
+      mhtml += '<td>' + (isVerified ? '<span class="badge badge-green">✓ Verified</span>' : '<span class="badge badge-orange">Unverified</span>') + '</td>';
+      mhtml += '<td><input type="checkbox" ' + (isVerified ? 'checked' : '') + ' ' + (dayRecon.locked ? 'disabled' : '') + ' onchange="toggleVerify(\'' + selectedDate + '\', \'' + key + '\', this.checked)" style="transform:scale(1.5); cursor:pointer;"></td>';
+      mhtml += '</tr>';
+    });
+    mpesaBody.innerHTML = mhtml;
+  }
+  document.getElementById('mpesaReconStats').innerHTML = 'Total: <strong style="color:var(--orange);">' + settings.currency + ' ' + totals.mpesa.toFixed(2) + '</strong>';
+
+  var cardBody = document.getElementById('cardReconBody');
+  var cardEmpty = document.getElementById('cardReconEmpty');
+  if (cardList.length === 0) { cardBody.innerHTML = ''; cardEmpty.style.display = 'block'; }
+  else {
+    cardEmpty.style.display = 'none';
+    var chtml = '';
+    cardList.forEach(function(t) {
+      var key = 'card_' + t.orderId;
+      var isVerified = dayRecon.verified && dayRecon.verified[key];
+      chtml += '<tr>';
+      chtml += '<td>#' + t.orderId.toString().slice(-6) + '</td>';
+      chtml += '<td>' + t.time + '</td>';
+      chtml += '<td>' + t.cashier + '</td>';
+      chtml += '<td><span class="ref-code">' + t.ref + '</span></td>';
+      chtml += '<td style="font-weight:700; color:var(--orange);">' + settings.currency + ' ' + t.amount.toFixed(2) + '</td>';
+      chtml += '<td>' + (isVerified ? '<span class="badge badge-green">✓ Verified</span>' : '<span class="badge badge-orange">Unverified</span>') + '</td>';
+      chtml += '<td><input type="checkbox" ' + (isVerified ? 'checked' : '') + ' ' + (dayRecon.locked ? 'disabled' : '') + ' onchange="toggleVerify(\'' + selectedDate + '\', \'' + key + '\', this.checked)" style="transform:scale(1.5); cursor:pointer;"></td>';
+      chtml += '</tr>';
+    });
+    cardBody.innerHTML = chtml;
+  }
+  document.getElementById('cardReconStats').innerHTML = 'Total: <strong style="color:var(--orange);">' + settings.currency + ' ' + totals.card.toFixed(2) + '</strong>';
+
+  document.getElementById('reconBy').value = dayRecon.by || '';
+  document.getElementById('reconNotes').value = dayRecon.notes || '';
+
+  var lockedBanner = document.getElementById('reconLockedBanner');
+  if (dayRecon.locked) {
+    lockedBanner.style.display = 'flex';
+    lockedBanner.innerHTML = '<span>🔒 This day is LOCKED — Reconciled by ' + dayRecon.by + ' at ' + new Date(dayRecon.lockedAt).toLocaleString() + '</span>';
+    document.getElementById('reconSubmitBtn').disabled = true;
+    document.getElementById('reconSubmitBtn').style.opacity = '0.5';
+    document.getElementById('reconSubmitBtn').style.cursor = 'not-allowed';
+  } else {
+    lockedBanner.style.display = 'none';
+    document.getElementById('reconSubmitBtn').disabled = false;
+    document.getElementById('reconSubmitBtn').style.opacity = '1';
+    document.getElementById('reconSubmitBtn').style.cursor = 'pointer';
+  }
+  renderReconTrend();
+}
+
+function toggleVerify(dateKey, itemKey, isChecked) {
+  var reconData = JSON.parse(localStorage.getItem('pub_reconciliation') || '{}');
+  if (!reconData[dateKey]) reconData[dateKey] = { verified: {}, locked: false, by: '', notes: '', openingFloat: 0, actualCash: 0 };
+  if (reconData[dateKey].locked) { toast('Day is locked — cannot modify', true, 'err'); return; }
+  if (isChecked) reconData[dateKey].verified[itemKey] = true;
+  else delete reconData[dateKey].verified[itemKey];
+  reconData[dateKey].lastUpdated = new Date().toISOString();
+  localStorage.setItem('pub_reconciliation', JSON.stringify(reconData));
+  loadReconciliation();
+}
+
+function updateCashVariance() {
+  var opening = parseFloat(document.getElementById('reconOpeningFloat').value) || 0;
+  var cashSales = parseFloat(document.getElementById('reconCashSales').value) || 0;
+  var expected = opening + cashSales;
+  var actual = parseFloat(document.getElementById('reconActualCash').value) || 0;
+  var variance = actual - expected;
+  document.getElementById('reconExpectedCash').value = expected.toFixed(2);
+  var varEl = document.getElementById('reconCashVariance');
+  varEl.value = (variance >= 0 ? '+' : '') + variance.toFixed(2);
+  if (Math.abs(variance) < 1) varEl.style.color = 'var(--green)';
+  else if (Math.abs(variance) < 100) varEl.style.color = 'var(--gold)';
+  else varEl.style.color = 'var(--red)';
+}
+
+function submitReconciliation() {
+  if (!can('reconciliation.edit')) { toast('Access denied', true, 'err'); return; }
+  var dateKey = document.getElementById('reconDate').value;
+  if (!dateKey) { toast('Please select a date first', true, 'err'); return; }
+  var by = document.getElementById('reconBy').value.trim();
+  if (!by) { toast('Please enter who is reconciling', true, 'err'); return; }
+  var reconData = JSON.parse(localStorage.getItem('pub_reconciliation') || '{}');
+  if (!reconData[dateKey]) reconData[dateKey] = { verified: {} };
+  reconData[dateKey].by = by;
+  reconData[dateKey].notes = document.getElementById('reconNotes').value.trim();
+  reconData[dateKey].openingFloat = parseFloat(document.getElementById('reconOpeningFloat').value) || 0;
+  reconData[dateKey].actualCash = parseFloat(document.getElementById('reconActualCash').value) || 0;
+  reconData[dateKey].expectedCash = parseFloat(document.getElementById('reconExpectedCash').value) || 0;
+  reconData[dateKey].variance = parseFloat(document.getElementById('reconCashVariance').value) || 0;
+  reconData[dateKey].locked = true;
+  reconData[dateKey].lockedAt = new Date().toISOString();
+  localStorage.setItem('pub_reconciliation', JSON.stringify(reconData));
+  toast('✅ Day locked & reconciliation saved', false, 'ok');
+  loadReconciliation();
+}
+
+function unlockReconciliation() {
+  if (!currentUser || currentUser.role !== 'superadmin') { toast('🚫 Only the system owner can unlock a day', true, 'err'); return; }
+  var dateKey = document.getElementById('reconDate').value;
+  if (!confirm('Unlock reconciliation for ' + dateKey + '?')) return;
+  var reconData = JSON.parse(localStorage.getItem('pub_reconciliation') || '{}');
+  if (reconData[dateKey]) {
+    reconData[dateKey].locked = false;
+    localStorage.setItem('pub_reconciliation', JSON.stringify(reconData));
+    toast('🔓 Day unlocked', false, 'ok');
+    loadReconciliation();
+  } else toast('No reconciliation found for this date', true, 'err');
+}
+
+function renderReconTrend() {
+  var canvas = document.getElementById('reconTrendChart');
+  if (!canvas) return;
+  var reconData = JSON.parse(localStorage.getItem('pub_reconciliation') || '{}');
+  var labels = [], reconciled = [], unreconciled = [];
+  for (var i = 6; i >= 0; i--) {
+    var d = new Date(); d.setDate(d.getDate() - i);
+    var key = d.toISOString().slice(0, 10);
+    labels.push(d.toLocaleDateString('en-GB', {day:'2-digit', month:'short'}));
+    var day = reconData[key];
+    if (day && day.locked) { reconciled.push(1); unreconciled.push(0); }
+    else { reconciled.push(0); unreconciled.push(1); }
+  }
+  if (window.reconTrendChartObj) window.reconTrendChartObj.destroy();
+  window.reconTrendChartObj = new Chart(canvas, {
+    type: 'bar',
+    data: { labels: labels, datasets: [
+      { label: 'Reconciled', data: reconciled, backgroundColor: '#10b981', borderRadius: 6 },
+      { label: 'Not Reconciled', data: unreconciled, backgroundColor: '#ef4444', borderRadius: 6 }
+    ] },
+    options: { responsive: true, maintainAspectRatio: true, plugins: { legend: { labels: { color: '#b8b8b8' } } }, scales: { x: { stacked: true, ticks: { color: '#b8b8b8' }, grid: { display: false } }, y: { stacked: true, ticks: { color: '#b8b8b8', stepSize: 1 }, grid: { color: '#2a2a2a' } } } }
+  });
+}
+
+function printReconciliationReport() {
+  if (!can('reconciliation.view')) { toast('Access denied', true, 'err'); return; }
+  var dateKey = document.getElementById('reconDate').value;
+  var dateObj = new Date(dateKey + 'T00:00:00');
+  var localDateStr = dateObj.toLocaleDateString();
+  var orders = JSON.parse(localStorage.getItem('pub_orders') || '[]');
+  var dayOrders = orders.filter(function(o) { return o.date === localDateStr; });
+  var reconData = JSON.parse(localStorage.getItem('pub_reconciliation') || '{}');
+  var dayRecon = reconData[dateKey] || {};
+  var html = '<!DOCTYPE html><html><head><title>Reconciliation</title><style>@page{size:A4;margin:15mm}body{font-family:Arial;color:#000}h1{text-align:center;color:#ff7a00;margin-bottom:4px}table{width:100%;border-collapse:collapse;margin-top:12px}th,td{border:1px solid #ddd;padding:6px;font-size:11px;text-align:left}th{background:#ff7a00;color:white}.ref{font-family:monospace;background:#fff7ed;color:#c2410c;padding:2px 6px;border-radius:3px;font-weight:bold;}.summary{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:10px;margin:16px 0}.summary div{padding:10px;background:#f5f5f5;border-radius:6px;border-left:3px solid #ff7a00}.summary .label{font-size:10px;color:#666;text-transform:uppercase}.summary .value{font-size:18px;font-weight:bold;margin-top:4px}</style></head><body>';
+  html += '<h1>🔍 Reconciliation Report</h1><p style="text-align:center;">' + settings.clubName + ' — ' + dateObj.toLocaleDateString('en-GB', {weekday:'long', year:'numeric', month:'long', day:'numeric'}) + '</p>';
+  var mTotal = 0, cTotal = 0, cashTotal = 0, rTotal = 0;
+  dayOrders.forEach(function(o) {
+    if (o.type === 'room') { rTotal += o.total; return; }
+    for (var m in o.payments) {
+      if (m === 'mpesa') mTotal += o.payments[m].amount;
+      if (m === 'card') cTotal += o.payments[m].amount;
+      if (m === 'cash') cashTotal += o.payments[m].amount;
+    }
+  });
+  html += '<div class="summary"><div><div class="label">M-Pesa</div><div class="value">KSH ' + mTotal.toFixed(2) + '</div></div><div><div class="label">Card</div><div class="value">KSH ' + cTotal.toFixed(2) + '</div></div><div><div class="label">Cash</div><div class="value">KSH ' + cashTotal.toFixed(2) + '</div></div><div><div class="label">Room</div><div class="value">KSH ' + rTotal.toFixed(2) + '</div></div></div>';
+  html += '<h3>M-Pesa Transactions</h3><table><tr><th>Order #</th><th>Time</th><th>Cashier</th><th>Phone</th><th>Reference</th><th>Amount</th><th>Verified</th></tr>';
+  dayOrders.forEach(function(o) {
+    if (o.payments && o.payments.mpesa) {
+      var p = o.payments.mpesa; var key = 'mpesa_' + o.id; var v = dayRecon.verified && dayRecon.verified[key] ? '✓' : '';
+      html += '<tr><td>#' + o.id.toString().slice(-6) + '</td><td>' + o.time + '</td><td>' + o.cashier + '</td><td>' + (p.phone||'') + '</td><td class="ref">' + (p.ref||'') + '</td><td>KSH ' + p.amount.toFixed(2) + '</td><td>' + v + '</td></tr>';
+    }
+  });
+  html += '</table>';
+  html += '<h3 style="margin-top:16px;">Card Transactions</h3><table><tr><th>Order #</th><th>Time</th><th>Cashier</th><th>Reference</th><th>Amount</th><th>Verified</th></tr>';
+  dayOrders.forEach(function(o) {
+    if (o.payments && o.payments.card) {
+      var p = o.payments.card; var key = 'card_' + o.id; var v = dayRecon.verified && dayRecon.verified[key] ? '✓' : '';
+      html += '<tr><td>#' + o.id.toString().slice(-6) + '</td><td>' + o.time + '</td><td>' + o.cashier + '</td><td class="ref">' + (p.ref||'') + '</td><td>KSH ' + p.amount.toFixed(2) + '</td><td>' + v + '</td></tr>';
+    }
+  });
+  html += '</table>';
+  html += '<h3 style="margin-top:16px;">Cash Drawer</h3><table><tr><td>Opening Float</td><td>KSH ' + (dayRecon.openingFloat || 0).toFixed(2) + '</td></tr><tr><td>Cash Sales</td><td>KSH ' + cashTotal.toFixed(2) + '</td></tr><tr><td>Expected in Till</td><td>KSH ' + (dayRecon.expectedCash || 0).toFixed(2) + '</td></tr><tr><td>Actual Counted</td><td>KSH ' + (dayRecon.actualCash || 0).toFixed(2) + '</td></tr><tr style="font-weight:bold;background:' + ((dayRecon.variance || 0) === 0 ? '#d1fae5' : '#fee2e2') + '"><td>Variance</td><td>KSH ' + ((dayRecon.variance || 0) >= 0 ? '+' : '') + (dayRecon.variance || 0).toFixed(2) + '</td></tr></table>';
+  if (dayRecon.by) html += '<p style="margin-top:20px; padding:12px; background:#f0f9ff; border-left:4px solid #0284c7;"><strong>Reconciled by:</strong> ' + dayRecon.by + (dayRecon.lockedAt ? ' at ' + new Date(dayRecon.lockedAt).toLocaleString() : '') + (dayRecon.notes ? '<br><strong>Notes:</strong> ' + dayRecon.notes : '') + '</p>';
+  html += '</body></html>';
+  var iframe = document.getElementById('printFrame');
+  var doc = iframe.contentWindow.document;
+  doc.open(); doc.write(html); doc.close();
+  iframe.contentWindow.focus(); iframe.contentWindow.print();
+  toast('🖨️ Reconciliation printed', false, 'ok');
+}
+
+function exportReconciliation() {
+  if (!can('reconciliation.view')) { toast('Access denied', true, 'err'); return; }
+  var dateKey = document.getElementById('reconDate').value;
+  var dateObj = new Date(dateKey + 'T00:00:00');
+  var localDateStr = dateObj.toLocaleDateString();
+  var orders = JSON.parse(localStorage.getItem('pub_orders') || '[]');
+  var dayOrders = orders.filter(function(o) { return o.date === localDateStr; });
+  var reconData = JSON.parse(localStorage.getItem('pub_reconciliation') || '{}');
+  var dayRecon = reconData[dateKey] || {};
+  downloadJSON({ date: dateKey, orders: dayOrders, reconciliation: dayRecon }, 'reconciliation-' + dateKey + '.json');
+}
+
+// HELD TABS
+function holdTab() {
+  if (cart.length === 0) { toast('Tab empty', true, 'err'); return; }
+  var name = prompt('Customer name:', 'Customer ' + (heldTabs.length + 1));
+  if (!name) return;
+  heldTabs.push({ id: Date.now(), customer: name, items: cart.slice(), total: getTotal(), heldAt: new Date().toLocaleString(), heldBy: currentUser.name, heldById: currentUser.id, heldByRole: currentUser.role, cashier: currentUser.name });
+  localStorage.setItem('pub_held_tabs', JSON.stringify(heldTabs));
+  cart = []; renderCart(); loadHeldTabs();
+  toast('📌 Tab held by ' + currentUser.name, false, 'info');
+}
+
+function recallTab() {
+  if (heldTabs.length === 0) { toast('No held tabs', true, 'err'); return; }
+  switchTab('tabs', {target: document.querySelectorAll('.tab-btn[data-tab="tabs"]')[0]});
+  toast('Select a tab to recall', false, 'info');
+}
+
+function recallSpecificTab(id) {
+  var tab = null;
+  for (var i = 0; i < heldTabs.length; i++) { if (heldTabs[i].id === id) { tab = heldTabs[i]; break; } }
+  if (!tab) return;
+  if (currentUser.role === 'cashier' && tab.heldById !== currentUser.id) { toast('🚫 You can only recall tabs you held', true, 'err'); return; }
+  cart = tab.items.slice();
+  heldTabs = heldTabs.filter(function(t) { return t.id !== id; });
+  localStorage.setItem('pub_held_tabs', JSON.stringify(heldTabs));
+  renderCart(); loadHeldTabs();
+  switchTab('pos', {target: document.querySelectorAll('.tab-btn[data-tab="pos"]')[0]});
+  toast('↩️ Recalled: ' + tab.customer, false, 'ok');
+}
+
+function voidTab() {
+  if (cart.length === 0) { toast('Nothing to void', true, 'err'); return; }
+  if (confirm('Void tab?')) { cart = []; renderCart(); toast('❌ Voided', false, 'info'); }
+}
+
+function loadHeldTabs() {
+  var tbody = document.getElementById('heldTabsBody');
+  if (!tbody) return;
+  var visibleTabs = heldTabs;
+  if (currentUser && currentUser.role === 'cashier') visibleTabs = heldTabs.filter(function(t) { return t.heldById === currentUser.id; });
+  var info = document.getElementById('tabsFilterInfo');
+  if (info) {
+    if (currentUser && currentUser.role === 'cashier') info.textContent = '👤 Showing only your held tabs (' + visibleTabs.length + ' of ' + heldTabs.length + ')';
+    else info.textContent = '👑 Showing all held tabs (' + visibleTabs.length + ' total)';
+  }
+  if (visibleTabs.length === 0) { tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;padding:40px;color:var(--text-muted);">No held tabs</td></tr>'; return; }
+  var html = '';
+  for (var i = 0; i < visibleTabs.length; i++) {
+    var t = visibleTabs[i];
+    var itemCount = t.items.reduce(function(s, it) { return s + it.qty; }, 0);
+    var heldByName = t.heldBy || t.cashier || 'Unknown';
+    var heldByRole = t.heldByRole || 'cashier';
+    var roleClass = 'role-' + heldByRole;
+    var roleIcon = heldByRole === 'admin' ? '👑' : (heldByRole === 'manager' ? '📊' : '👤');
+    var canRecall = true;
+    if (currentUser.role === 'cashier' && t.heldById !== currentUser.id) canRecall = false;
+    html += '<tr><td>#' + t.id.toString().slice(-6) + '</td><td><strong>' + t.customer + '</strong></td><td>' + itemCount + ' items</td><td style="color:var(--orange);font-weight:700;">' + settings.currency + ' ' + t.total.toFixed(2) + '</td><td><strong>' + heldByName + '</strong></td><td><span class="role-tag ' + roleClass + '">' + roleIcon + ' ' + heldByRole + '</span></td><td>' + t.heldAt + '</td><td>';
+    if (canRecall) html += '<button class="row-btn" onclick="recallSpecificTab(' + t.id + ')">↩️ Recall</button>';
+    else html += '<span style="color:var(--text-muted);font-size:11px;">🔒 Locked</span>';
+    html += '</td></tr>';
+  }
+  tbody.innerHTML = html;
+}
+
+// DATA HELPERS
+function downloadJSON(data, filename) {
+  var blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+  var url = URL.createObjectURL(blob);
+  var a = document.createElement('a');
+  a.href = url; a.download = filename; a.click();
+  URL.revokeObjectURL(url);
+  toast('📤 Exported: ' + filename, false, 'ok');
+}
+
+function exportAllData() {
+  if (!can('settings.view')) { toast('Access denied', true, 'err'); return; }
+  var all = { products: products, users: users, orders: JSON.parse(localStorage.getItem('pub_orders') || '[]'), heldTabs: heldTabs, licenses: licenses, rooms: rooms, settings: settings, reconciliation: JSON.parse(localStorage.getItem('pub_reconciliation') || '{}'), exportedAt: new Date().toISOString() };
+  downloadJSON(all, 'bar-pos-full-backup.json');
+}
+
+function importAllData() {
+  if (!can('settings.edit')) { toast('Access denied', true, 'err'); return; }
+  document.getElementById('importText').value = ''; document.getElementById('importModal').classList.add('active');
+}
+
+function resetAllData() {
+  if (!can('settings.edit')) { toast('Access denied', true, 'err'); return; }
+  if (!confirm('⚠️ DELETE ALL DATA?')) return;
+  if (!confirm('Really? Cannot be undone!')) return;
+  localStorage.clear();
+  location.reload();
+}
+
+function toast(msg, isErr, type) {
+  var el = document.getElementById('toast');
+  el.textContent = msg;
+  el.className = 'toast ' + (isErr ? 'toast-err' : (type === 'info' ? 'toast-info' : 'toast-ok'));
+  el.style.display = 'flex';
+  setTimeout(function() { el.style.display = 'none'; }, 2800);
+}
+
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'F1') { e.preventDefault(); if (currentTab === 'pos') openPay('mpesa'); }
+  if (e.key === 'F2') { e.preventDefault(); if (currentTab === 'pos') openPay('cash'); }
+  if (e.key === 'F3') { e.preventDefault(); if (currentTab === 'pos') openPay('split'); }
+  if (e.key === 'F4') { e.preventDefault(); if (currentTab === 'pos') holdTab(); }
+  if (e.key === 'F9') { e.preventDefault(); if (can('serviceCharge.toggle')) toggleServiceCharge(); }
+  if (e.key === 'Escape') { closePay(); closeReceipt(); closeUserModal(); closeImportModal(); closeGenerateLicenseModal(); closeRoomModal(); closeRoomDetail(); }
+});
+
+window.addEventListener('storage', function(e) {
+  if (e.key === 'pub_products') {
+    products = JSON.parse(e.newValue || '[]');
+    renderProducts(); renderCart(); updateRibbon();
+    if (currentUser) toast('🔄 Products synced from Stock Manager', false, 'info');
+  }
+  if (e.key === 'pub_rooms') {
+    rooms = JSON.parse(e.newValue || '[]');
+    if (currentTab === 'rooms') loadRooms();
+  }
+});
+</script>
+</body>
+</html>
