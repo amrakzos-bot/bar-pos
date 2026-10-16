@@ -239,6 +239,10 @@
     .recon-summary-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 16px; margin-bottom: 24px; }
     @media (max-width: 1100px) { .pos-grid { grid-template-columns: 1fr 340px; } .charts-grid { grid-template-columns: 1fr; } }
     @media (max-width: 900px) { .pos-grid { grid-template-columns: 1fr; } .form-grid { grid-template-columns: 1fr; } }
+/* Electron/Chromium overlay hit-test fix */
+.overlay { will-change: transform; transform: translateZ(0); }
+.overlay[style*="display: none"] { pointer-events: none !important; }
+#app[style*="display: none"] { pointer-events: none !important; }
 </style>
 </head>
 <body>
@@ -258,12 +262,16 @@
     <input type="text" id="licenseBusinessName" placeholder="e.g., THE ROYAL OAK LOUNGE" autocomplete="off">
     <label>License Key</label>
     <input type="text" id="licenseInput" placeholder="XXXX-XXXX-XXXX-XXXX" autocomplete="off">
+    <div style="margin-top:12px; padding:12px; background:var(--bg-dark); border-radius:10px; font-size:11px; color:var(--text-muted); border:1px dashed var(--border);">
+      <div style="text-transform:uppercase; font-weight:700; letter-spacing:0.06em; margin-bottom:4px;">🖥️ Machine ID (share with your vendor)</div>
+      <div id="machineIdDisplay" style="font-family:'Courier New',monospace; font-size:15px; font-weight:800; color:var(--orange); letter-spacing:2px; word-break:break-all;">---</div>
+      <div style="font-size:10px; margin-top:6px; color:var(--text-muted);">Your license will be bound to this machine</div>
+    </div>
     <button class="btn btn-orange" onclick="activateLicense()">🔓 Activate License</button>
     <button class="btn btn-ghost" onclick="startTrial()">🎁 Start 14-Day Free Trial</button>
     <div id="licenseMsg" class="msg"></div>
     <div style="margin-top:24px; padding-top:20px; border-top:1px solid var(--border); font-size:12px; color:var(--text-muted);">
-      <p style="margin-bottom:8px;">🔑 Demo Key: <strong style="color:var(--orange);">DEMO-2024</strong></p>
-      <p>Contact: amrakzos@gmail.com · +254 143 831 387</p>
+      <p>📞 Need a license? Contact: <strong>amrakzos@gmail.com · +254 143 831 387</strong></p>
     </div>
   </div>
 </div>
@@ -274,14 +282,12 @@
     <div class="logo-icon">🔐</div>
     <h1>Welcome Back</h1>
     <p id="loginWelcomeMsg">Sign in to your account</p>
-    <input type="text" id="loginUser" placeholder="Username" value="admin">
-    <input type="password" id="loginPass" placeholder="Password" value="admin123">
+    <input type="text" id="loginUser" placeholder="Username" autocomplete="off">
+    <input type="password" id="loginPass" placeholder="Password" autocomplete="off">
     <button class="btn btn-orange" onclick="doLogin()">Sign In</button>
     <div id="loginMsg" class="msg"></div>
-    <div style="margin-top:24px; padding-top:20px; border-top:1px solid var(--border); font-size:12px; color:var(--text-muted); text-align:left; line-height:1.8;">
-      <p><strong style="color:var(--gold);">👑 Admin (Licensee):</strong> admin / admin123</p>
-      <p><strong style="color:var(--purple);">📊 Manager:</strong> manager / mgr123</p>
-      <p><strong style="color:var(--blue);">👤 Cashier:</strong> cashier / cash123</p>
+    <div style="margin-top:24px; padding-top:20px; border-top:1px solid var(--border); font-size:12px; color:var(--text-muted);">
+      <p>🔒 Authorized personnel only</p>
     </div>
   </div>
 </div>
@@ -296,7 +302,7 @@
         <small>Terminal 01 · <span id="clock">--:--</span></small>
       </div>
     </div>
-    
+
     <div class="tabs" id="mainTabs">
       <button class="tab-btn active" data-tab="pos" data-perm="pos.view" onclick="switchTab('pos', event)">🛒 POS</button>
       <button class="tab-btn" data-tab="rooms" data-perm="rooms.view" onclick="switchTab('rooms', event)">🚪 Rooms</button>
@@ -309,7 +315,7 @@
       <button class="tab-btn" data-tab="license" data-perm="license.view" onclick="switchTab('license', event)">🔑 License</button>
       <button class="tab-btn" data-tab="settings" data-perm="settings.view" onclick="switchTab('settings', event)">⚙️ Settings</button>
     </div>
-    
+
     <div class="topbar-right">
       <div class="service-toggle" id="serviceToggleContainer">
         <span>Service</span>
@@ -620,7 +626,7 @@
   <!-- SETTINGS -->
   <div class="page" id="page-settings">
     <div class="admin-header"><h1>⚙️ <span>Settings</span></h1></div>
-    
+
     <div class="table-card">
       <h3>Business Information</h3>
       <div class="form-grid">
@@ -631,7 +637,7 @@
       </div>
       <div style="margin-top:16px;"><button class="toolbar-btn primary" onclick="saveSettings()">💾 Save</button></div>
     </div>
-    
+
     <div class="table-card">
       <h3>🖨️ Thermal Printer Settings</h3>
       <div class="form-grid">
@@ -654,7 +660,7 @@
       </div>
       <div style="margin-top:16px;"><button class="toolbar-btn primary" onclick="savePrinterSettings()">💾 Save Printer Settings</button></div>
     </div>
-    
+
     <div class="table-card">
       <h3>💰 Service Charge</h3>
       <div style="display:flex; justify-content:space-between; align-items:center; padding:16px; background:var(--bg-elevated); border-radius:12px;">
@@ -671,6 +677,50 @@
       <div style="margin-top:16px;"><button class="toolbar-btn primary" onclick="saveServiceSettings()">💾 Save Service Settings</button></div>
     </div>
 
+    <!-- FIX #7 — License Info card with Renew + Auto-renew controls -->
+    <div class="table-card" id="settingsLicenseCard">
+      <h3>🔑 License Info &amp; Renewal</h3>
+      <div class="form-grid">
+        <div class="form-group">
+          <label>Business Name</label>
+          <input type="text" id="licInfoBusiness" disabled style="background:var(--bg-dark); color:var(--orange); font-weight:700;">
+        </div>
+        <div class="form-group">
+          <label>Expires</label>
+          <input type="text" id="licInfoExpiry" disabled style="background:var(--bg-dark);">
+        </div>
+        <div class="form-group">
+          <label>Days Remaining</label>
+          <input type="text" id="licInfoDays" disabled style="background:var(--bg-dark); font-weight:700;">
+        </div>
+        <div class="form-group">
+          <label>Auto-Renew</label>
+          <div style="display:flex; align-items:center; gap:12px; padding:8px 0;">
+            <div class="toggle-switch" id="licAutoRenewToggle" onclick="toggleAutoRenew()"></div>
+            <span id="licAutoRenewLabel" style="font-weight:700; color:var(--text-muted);">OFF</span>
+          </div>
+        </div>
+      </div>
+      <div style="display:flex; gap:10px; margin-top:16px; flex-wrap:wrap;">
+        <button class="toolbar-btn primary" onclick="renewLicenseNow()">🔄 Renew Now</button>
+        <button class="toolbar-btn" onclick="requestRenewalInAdvance()">📨 Request Renewal in Advance</button>
+      </div>
+      <p style="font-size:11px; color:var(--text-muted); margin-top:10px;">
+        ℹ️ Auto-renew will extend your license automatically the moment it expires.
+      </p>
+    </div>
+
+    <div class="table-card">
+      <h3>🖥️ Machine Information</h3>
+      <div style="background:var(--bg-dark); border:2px dashed var(--border); border-radius:12px; padding:20px; text-align:center;">
+        <div style="font-size:11px; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.06em; font-weight:700; margin-bottom:8px;">Your Machine ID</div>
+        <div id="settingsMachineId" style="font-family:'Courier New',monospace; font-size:20px; font-weight:800; color:var(--orange); letter-spacing:2px;">---</div>
+        <button class="toolbar-btn" onclick="copyMachineId()" style="margin-top:12px;">📋 Copy to Clipboard</button>
+        <p style="font-size:11px; color:var(--text-muted); margin-top:12px;">Share this with your vendor when purchasing or renewing a license.</p>
+      </div>
+    </div>
+
+    <!-- FIX #1 — single clean renewalCard (orphan removed) -->
     <div class="table-card" id="renewalCard" style="display:none;">
       <h3>🔄 License Renewal</h3>
       <p style="font-size:13px; color:var(--text-muted); margin-bottom:12px;">
@@ -681,13 +731,14 @@
         <button class="toolbar-btn primary" onclick="showRenewalPrompt(true)">🔄 Renew Now</button>
       </div>
     </div>
-    
+
     <div class="table-card">
       <h3>Data Management</h3>
       <div style="display:flex; gap:10px; flex-wrap:wrap;">
         <button class="toolbar-btn" onclick="exportAllData()">📤 Export All</button>
         <button class="toolbar-btn" onclick="importAllData()">📥 Import</button>
         <button class="toolbar-btn" style="border-color:var(--red); color:var(--red);" onclick="resetAllData()">⚠️ Reset All</button>
+        <button class="toolbar-btn" onclick="checkForUpdatesManually()">🔄 Check for Updates</button>
       </div>
     </div>
   </div>
@@ -818,12 +869,14 @@
     <div class="form-group" style="margin-bottom:12px;"><label>Contact Person</label><input type="text" id="genContactPerson"></div>
     <div class="form-group" style="margin-bottom:12px;"><label>Contact Phone</label><input type="tel" id="genContactPhone"></div>
     <div class="form-group" style="margin-bottom:12px;"><label>Contact Email</label><input type="email" id="genContactEmail"></div>
+    <!-- FIX #6 — Discount pricing tiers -->
     <div class="form-group" style="margin-bottom:12px;"><label>Duration</label>
       <select id="genLicenseDuration">
-        <option value="1">1 Year - KSH 10,000</option>
-        <option value="2">2 Years - KSH 20,000</option>
-        <option value="3">3 Years - KSH 30,000</option>
-        <option value="5">5 Years - KSH 50,000</option>
+        <option value="1">1 Year — KSH 10,000</option>
+        <option value="2">2 Years — KSH 19,000 (save 5%)</option>
+        <option value="3">3 Years — KSH 28,500 (save 5%)</option>
+        <option value="4">4 Years — KSH 38,000 (save 5%)</option>
+        <option value="5">5 Years — KSH 47,000 (save 6%)</option>
       </select>
     </div>
     <div id="generatedKeyDisplay" class="license-key-display" style="display:none;">
@@ -832,8 +885,43 @@
       <button class="toolbar-btn" onclick="copyGeneratedKey()" style="margin-top:12px;">📋 Copy Key</button>
     </div>
     <div class="modal-row">
-      <button class="confirm" onclick="generateLicense()">💰 Generate License</button>
+      <button class="confirm" onclick="openMachineIdPrompt()">💰 Generate License</button>
       <button class="cancel" onclick="closeGenerateLicenseModal()">Close</button>
+    </div>
+  </div>
+</div>
+
+<!-- CUSTOM PROMPT MODAL -->
+<div id="customPromptModal" class="modal">
+  <div class="modal-box" style="width:480px;">
+    <h3 id="customPromptTitle">Input Required</h3>
+    <p id="customPromptMessage" style="color:var(--text-secondary); font-size:13px; margin-bottom:16px; white-space:pre-wrap;"></p>
+    <div class="form-group">
+      <label id="customPromptLabel">Value</label>
+      <input type="text" id="customPromptInput" placeholder="" style="font-family:inherit;">
+    </div>
+    <div class="modal-row">
+      <button class="confirm" onclick="confirmCustomPrompt()">✅ OK</button>
+      <button class="cancel" onclick="cancelCustomPrompt()">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<!-- MACHINE ID PROMPT -->
+<div id="machineIdPromptModal" class="modal">
+  <div class="modal-box" style="width:480px;">
+    <h3>🖥️ Enter Customer Machine ID</h3>
+    <p style="color:var(--text-secondary); font-size:13px; margin-bottom:16px;">
+      Ask the customer to share the Machine ID shown on their License Activation screen.<br><br>
+      <strong>Leave blank</strong> to create an <strong>UNBOUND</strong> license (works on any machine).
+    </p>
+    <div class="form-group">
+      <label>Machine ID (optional)</label>
+      <input type="text" id="machineIdPromptInput" placeholder="e.g., A3F7-9B2C-8E1D-4A5F" style="font-family:'Courier New',monospace; text-transform:uppercase; letter-spacing:1px;">
+    </div>
+    <div class="modal-row">
+      <button class="confirm" onclick="confirmMachineIdPrompt()">✅ Continue</button>
+      <button class="cancel" onclick="cancelMachineIdPrompt()">Cancel</button>
     </div>
   </div>
 </div>
@@ -850,20 +938,238 @@
   </div>
 </div>
 
-<div id="toast" class="toast"></div>
+<!-- FIRST-RUN SETUP -->
+<div id="setupModal" class="modal">
+  <div class="modal-box" style="width:480px;">
+    <h3>🎉 Welcome — First-Time Setup</h3>
+    <p style="color:var(--text-secondary); font-size:13px; margin-bottom:20px;">
+      Create your administrator account. You'll use these credentials to sign in and manage the system.
+    </p>
+    <div class="form-group" style="margin-bottom:12px;">
+      <label>Admin Username *</label>
+      <input type="text" id="setupUsername" placeholder="e.g., owner" autocomplete="off">
+    </div>
+    <div class="form-group" style="margin-bottom:12px;">
+      <label>Full Name *</label>
+      <input type="text" id="setupFullName" placeholder="e.g., John Doe" autocomplete="off">
+    </div>
+    <div class="form-group" style="margin-bottom:12px;">
+      <label>Password * (min 6 characters)</label>
+      <input type="password" id="setupPassword" placeholder="Choose a strong password" autocomplete="new-password">
+    </div>
+    <div class="form-group" style="margin-bottom:12px;">
+      <label>Confirm Password *</label>
+      <input type="password" id="setupConfirm" placeholder="Re-enter password" autocomplete="new-password">
+    </div>
+    <div id="setupMsg" class="msg"></div>
+    <div class="modal-row" style="margin-top:20px;">
+      <button class="confirm" onclick="completeSetup()">✅ Create Admin Account</button>
+    </div>
+    <p style="margin-top:16px; font-size:11px; color:var(--text-muted); text-align:center;">
+      ⚠️ Write these credentials down. They cannot be recovered if lost.
+    </p>
+  </div>
+</div>
 
+<div id="toast" class="toast"></div>
 <script>
-// ============ SUPER ADMIN ============
-var SUPER_ADMIN = {
-  id: -1,
-  username: 'superadmin',
-  password: 'SuperSecret2024!',
-  name: 'System Owner',
-  role: 'superadmin',
-  status: 'active',
-  lastLogin: null,
-  isSuperAdmin: true
-};
+// ============ SUPER ADMIN (loaded dynamically from main process) ============
+var SUPER_ADMIN = null;
+
+(function loadSuperAdmin() {
+  if (!window.posAPI || !window.posAPI.getSuperAdmin) {
+    console.log('[superadmin] Not available in this environment');
+    return;
+  }
+  Promise.resolve(window.posAPI.getSuperAdmin()).then(function(data) {
+    if (data && data.username && data.password) {
+      SUPER_ADMIN = {
+        id: -1,
+        username: data.username,
+        password: data.password,
+        name: data.name || 'System Owner',
+        role: 'superadmin',
+        status: 'active',
+        lastLogin: null,
+        isSuperAdmin: true
+      };
+      console.log('[superadmin] Loaded successfully');
+    } else {
+      console.log('[superadmin] No credentials configured for this machine');
+    }
+  }).catch(function(err) {
+    console.warn('[superadmin] Failed to load:', err);
+  });
+})();
+
+/* ============================================================
+   AUTO-UPDATE INTEGRATION
+   ============================================================ */
+(function initAutoUpdate() {
+  if (!window.posAPI) {
+    console.log('[updater] Not running in Electron — auto-update disabled.');
+    return;
+  }
+  window.posAPI.onUpdateStatus((data) => {
+    switch (data.state) {
+      case 'version':
+        window._appVersion = data.version;
+        injectVersionBadge(data.version);
+        break;
+      case 'checking':
+        if (data.manual) toast('🔍 Checking for updates…', false, 'info');
+        break;
+      case 'available':
+        toast('🔄 Update v' + data.version + ' found — downloading…', false, 'info');
+        break;
+      case 'downloading':
+        updateDownloadProgress(data.percent);
+        break;
+      case 'ready':
+        showUpdateBanner(data.version, data.releaseNotes);
+        toast('✅ Update ready — restart to apply', false, 'ok');
+        break;
+      case 'up-to-date':
+        if (data.manual) toast('✅ You are on the latest version (v' + data.version + ')', false, 'ok');
+        break;
+      case 'error':
+        if (data.manual) toast('❌ Update failed: ' + data.message, true, 'err');
+        console.warn('[updater]', data.message);
+        break;
+    }
+  });
+})();
+
+function injectVersionBadge(version) {
+  var ribbonRight = document.querySelector('.ribbon-right');
+  if (!ribbonRight || document.getElementById('ribbonVersion')) return;
+  var span = document.createElement('span');
+  span.id = 'ribbonVersion';
+  span.innerHTML = '📦 <span style="color:var(--orange);font-weight:700;">v' + version + '</span>';
+  ribbonRight.insertBefore(span, ribbonRight.firstChild);
+}
+
+function showUpdateBanner(version, notes) {
+  if (document.getElementById('updateBanner')) return;
+  var banner = document.createElement('div');
+  banner.id = 'updateBanner';
+  banner.style.cssText =
+    'position:fixed;top:0;left:0;right:0;z-index:99999;' +
+    'background:linear-gradient(90deg,#ff7a00,#cc6200);' +
+    'color:#fff;padding:12px 20px;font-weight:700;' +
+    'display:flex;justify-content:space-between;align-items:center;' +
+    'box-shadow:0 2px 16px rgba(0,0,0,0.5);font-size:14px;';
+  banner.innerHTML =
+    '<span>✅ Update <b>v' + version + '</b> is ready. Restart to apply.</span>' +
+    '<div>' +
+      '<button onclick="installUpdateNow()" ' +
+        'style="background:#fff;color:#ff7a00;border:none;padding:8px 18px;' +
+        'border-radius:8px;font-weight:800;cursor:pointer;margin-right:8px;">Restart & Update</button>' +
+      '<button onclick="dismissUpdateBanner()" ' +
+        'style="background:transparent;color:#fff;border:1px solid #fff;' +
+        'padding:8px 16px;border-radius:8px;font-weight:700;cursor:pointer;">Later</button>' +
+    '</div>';
+  document.body.appendChild(banner);
+}
+
+function updateDownloadProgress(percent) {
+  var banner = document.getElementById('updateBanner');
+  if (banner) {
+    var span = banner.querySelector('span');
+    if (span) span.innerHTML = '⬇️ Downloading update… <b>' + percent + '%</b>';
+  } else {
+    var p = document.getElementById('dlProgress');
+    if (!p) {
+      p = document.createElement('div');
+      p.id = 'dlProgress';
+      p.style.cssText =
+        'position:fixed;bottom:60px;right:24px;z-index:9999;' +
+        'background:var(--bg-elevated);border:1px solid var(--orange-dim);' +
+        'border-radius:12px;padding:12px 18px;color:#fff;font-weight:700;font-size:13px;' +
+        'box-shadow:0 4px 20px rgba(0,0,0,0.5);';
+      p.innerHTML = '⬇️ Update: <span id="dlPct">0%</span>' +
+        '<div style="margin-top:8px;height:4px;background:var(--bg-dark);border-radius:2px;overflow:hidden;">' +
+        '<div id="dlBar" style="height:100%;width:0%;background:var(--orange);transition:width .3s;"></div></div>';
+      document.body.appendChild(p);
+    }
+    document.getElementById('dlPct').textContent = percent + '%';
+    document.getElementById('dlBar').style.width = percent + '%';
+    if (percent >= 100) setTimeout(() => { var x = document.getElementById('dlProgress'); if (x) x.remove(); }, 1200);
+  }
+}
+
+function dismissUpdateBanner() {
+  var b = document.getElementById('updateBanner');
+  if (b) b.remove();
+}
+
+function installUpdateNow() {
+  if (!window.posAPI) return;
+  toast('♻️ Restarting to apply update…', false, 'info');
+  setTimeout(() => window.posAPI.installUpdate(), 400);
+}
+
+function checkForUpdatesManually() {
+  if (!window.posAPI) { toast('Updates only work in the installed desktop app', true, 'err'); return; }
+  window.posAPI.checkForUpdates();
+}
+
+// ============ CUSTOM PROMPT (replaces window.prompt which Electron blocks) ============
+var _customPromptCallback = null;
+
+function customPrompt(message, defaultValue, callback) {
+  _customPromptCallback = callback;
+  var modal = document.getElementById('customPromptModal');
+  var msgEl = document.getElementById('customPromptMessage');
+  var inputEl = document.getElementById('customPromptInput');
+  var titleEl = document.getElementById('customPromptTitle');
+  titleEl.textContent = 'Input Required';
+  msgEl.textContent = message || '';
+  inputEl.value = defaultValue || '';
+  modal.classList.add('active');
+  setTimeout(function() { inputEl.focus(); inputEl.select(); }, 100);
+}
+
+function confirmCustomPrompt() {
+  var inputEl = document.getElementById('customPromptInput');
+  var value = inputEl.value;
+  document.getElementById('customPromptModal').classList.remove('active');
+  var cb = _customPromptCallback;
+  _customPromptCallback = null;
+  if (cb) cb(value);
+}
+
+function cancelCustomPrompt() {
+  document.getElementById('customPromptModal').classList.remove('active');
+  var cb = _customPromptCallback;
+  _customPromptCallback = null;
+  if (cb) cb(null);
+}
+
+// ============ MACHINE ID PROMPT ============
+var _machineIdCallback = null;
+
+function openMachineIdPrompt() {
+  var modal = document.getElementById('machineIdPromptModal');
+  var input = document.getElementById('machineIdPromptInput');
+  if (!modal || !input) { toast('⚠️ Machine ID prompt missing', true, 'err'); return; }
+  input.value = '';
+  modal.classList.add('active');
+  setTimeout(function() { input.focus(); }, 100);
+}
+
+function confirmMachineIdPrompt() {
+  var input = document.getElementById('machineIdPromptInput');
+  var value = (input && input.value ? input.value.trim().toUpperCase() : '');
+  document.getElementById('machineIdPromptModal').classList.remove('active');
+  window._pendingMachineId = value;
+  generateLicense();
+}
+
+function cancelMachineIdPrompt() {
+  document.getElementById('machineIdPromptModal').classList.remove('active');
+  toast('License generation cancelled', false, 'info');
+}
 
 var PERMISSIONS = {
   superadmin: {},
@@ -984,11 +1290,7 @@ var defaultProducts = [
 ];
 
 var products = JSON.parse(localStorage.getItem('pub_products') || 'null') || defaultProducts;
-var users = JSON.parse(localStorage.getItem('pub_users') || 'null') || [
-  { id: 1, username: 'admin', password: 'admin123', name: 'Business Owner', role: 'admin', status: 'active', lastLogin: null },
-  { id: 2, username: 'manager', password: 'mgr123', name: 'Jane Manager', role: 'manager', status: 'active', lastLogin: null },
-  { id: 3, username: 'cashier', password: 'cash123', name: 'John Barman', role: 'cashier', status: 'active', lastLogin: null }
-];
+var users = JSON.parse(localStorage.getItem('pub_users') || 'null') || [];
 var heldTabs = JSON.parse(localStorage.getItem('pub_held_tabs') || '[]');
 var licenses = JSON.parse(localStorage.getItem('pub_licenses') || '[]');
 var rooms = JSON.parse(localStorage.getItem('pub_rooms') || '[]');
@@ -1001,11 +1303,86 @@ var quickPicks = [
 
 var categories = ['all', 'Draught', 'Bottles', 'Soft Drinks', 'Spirits', 'Cocktails', 'Food'];
 
+// ============ FIRST-RUN SETUP ============
+function showSetupModal() {
+  document.getElementById('setupModal').classList.add('active');
+  setTimeout(function() {
+    var el = document.getElementById('setupUsername');
+    if (el) el.focus();
+  }, 150);
+}
+
+function completeSetup() {
+  var username = document.getElementById('setupUsername').value.trim();
+  var fullName = document.getElementById('setupFullName').value.trim();
+  var password = document.getElementById('setupPassword').value;
+  var confirmPw = document.getElementById('setupConfirm').value;
+  var msg = document.getElementById('setupMsg');
+
+  if (!username) { msg.className = 'msg msg-err'; msg.textContent = '❌ Enter a username'; return; }
+  if (username.length < 3) { msg.className = 'msg msg-err'; msg.textContent = '❌ Username must be at least 3 characters'; return; }
+  if (!/^[a-zA-Z0-9_.-]+$/.test(username)) { msg.className = 'msg msg-err'; msg.textContent = '❌ Username can only contain letters, numbers, _, ., -'; return; }
+  if (!fullName) { msg.className = 'msg msg-err'; msg.textContent = '❌ Enter your full name'; return; }
+  if (!password) { msg.className = 'msg msg-err'; msg.textContent = '❌ Enter a password'; return; }
+  if (password.length < 6) { msg.className = 'msg msg-err'; msg.textContent = '❌ Password must be at least 6 characters'; return; }
+  if (password !== confirmPw) { msg.className = 'msg msg-err'; msg.textContent = '❌ Passwords do not match'; return; }
+  if (SUPER_ADMIN && username.toLowerCase() === SUPER_ADMIN.username.toLowerCase()) {
+    msg.className = 'msg msg-err'; msg.textContent = '❌ That username is reserved'; return;
+  }
+  var exists = false;
+  for (var i = 0; i < users.length; i++) {
+    if (users[i].username.toLowerCase() === username.toLowerCase()) { exists = true; break; }
+  }
+  if (exists) { msg.className = 'msg msg-err'; msg.textContent = '❌ That username already exists'; return; }
+
+  var newAdmin = {
+    id: 1, username: username, password: password, name: fullName,
+    role: 'admin', status: 'active', lastLogin: null,
+    createdViaSetup: true, createdAt: new Date().toISOString()
+  };
+  users.push(newAdmin);
+  localStorage.setItem('pub_users', JSON.stringify(users));
+
+  ['setupUsername', 'setupFullName', 'setupPassword', 'setupConfirm'].forEach(function(id) {
+    var el = document.getElementById(id);
+    if (el) el.value = '';
+  });
+  var setupMsgEl = document.getElementById('setupMsg');
+  if (setupMsgEl) { setupMsgEl.textContent = ''; setupMsgEl.className = 'msg'; }
+
+  document.getElementById('setupModal').classList.remove('active');
+  toast('✅ Admin account created — please sign in', false, 'ok');
+
+  setTimeout(function() {
+    var u = document.getElementById('loginUser');
+    if (u) u.focus();
+  }, 400);
+}
+
 window.onload = function() {
   loadSettings();
   updateClock();
   setInterval(updateClock, 1000);
   updateServiceToggleUI();
+
+  var midEl = document.getElementById('machineIdDisplay');
+  if (midEl && window.posAPI && window.posAPI.getMachineId) {
+    midEl.textContent = window.posAPI.getMachineId();
+  } else if (midEl) {
+    midEl.textContent = 'Browser Mode (No Machine ID)';
+    midEl.style.color = 'var(--text-muted)';
+    midEl.style.fontSize = '11px';
+  }
+
+  // FIX #3 — settingsMidEl block properly formatted on its own lines
+  var settingsMidEl = document.getElementById('settingsMachineId');
+  if (settingsMidEl && window.posAPI && window.posAPI.getMachineId) {
+    settingsMidEl.textContent = window.posAPI.getMachineId();
+  }
+
+  // FIX #7 — initialize license info card
+  refreshLicenseInfoCard();
+
   if (checkStoredLicense()) showLogin();
   else showLicense();
   updateRibbon();
@@ -1043,36 +1420,37 @@ function activateLicense() {
   var msg = document.getElementById('licenseMsg');
   if (!businessName) { msg.className = 'msg msg-err'; msg.textContent = '❌ Enter your Business Name'; return; }
   if (!key) { msg.className = 'msg msg-err'; msg.textContent = '❌ Enter your License Key'; return; }
-  if (key === 'DEMO-2024') {
-    var expires = new Date(); expires.setDate(expires.getDate() + 365);
-    var lic = { key: key, businessName: businessName, issued: new Date().toISOString(), expires: expires.toISOString(), price: 10000, currency: 'KSH', type: 'demo' };
-    localStorage.setItem('active_license', JSON.stringify(lic));
-    activeLicense = lic;
-    settings.clubName = businessName;
-    saveSettings();
-    msg.className = 'msg msg-ok';
-    msg.textContent = '✅ Demo activated for ' + businessName + '!';
-    setTimeout(showLogin, 1200);
-    return;
-  }
+
   var found = null;
   for (var i = 0; i < licenses.length; i++) { if (licenses[i].key === key) { found = licenses[i]; break; } }
-  if (found) {
-    if (found.revoked) { msg.className = 'msg msg-err'; msg.textContent = '❌ License revoked'; return; }
-    var daysLeft = getDaysLeft(found.expires);
-    if (daysLeft <= 0) { msg.className = 'msg msg-err'; msg.textContent = '❌ Expired. Renew KSH 10,000/year'; return; }
-    if (found.businessName.toUpperCase() !== businessName) { msg.className = 'msg msg-err'; msg.textContent = '❌ Registered to "' + found.businessName + '"'; return; }
-    localStorage.setItem('active_license', JSON.stringify(found));
-    activeLicense = found;
-    settings.clubName = businessName;
-    saveSettings();
-    msg.className = 'msg msg-ok';
-    msg.textContent = '✅ Activated! ' + daysLeft + ' days remaining';
-    setTimeout(showLogin, 1200);
-  } else {
+
+  if (!found) { msg.className = 'msg msg-err'; msg.textContent = '❌ Invalid license key. Contact amrakzos@gmail.com'; return; }
+  if (found.revoked) { msg.className = 'msg msg-err'; msg.textContent = '❌ This license has been revoked'; return; }
+  var daysLeft = getDaysLeft(found.expires);
+  if (daysLeft <= 0) { msg.className = 'msg msg-err'; msg.textContent = '❌ License expired. Renew KSH 10,000/year'; return; }
+  if (found.businessName.toUpperCase() !== businessName) {
     msg.className = 'msg msg-err';
-    msg.textContent = '❌ Invalid key. Try DEMO-2024';
+    msg.textContent = '❌ This license is registered to "' + found.businessName + '"';
+    return;
   }
+
+  if (found.machineId) {
+    var currentMid = (window.posAPI && window.posAPI.getMachineId) ? window.posAPI.getMachineId() : null;
+    if (!currentMid) { msg.className = 'msg msg-err'; msg.textContent = '⚠️ Machine ID unavailable. Contact support.'; return; }
+    if (currentMid.toUpperCase() !== found.machineId.toUpperCase()) {
+      msg.className = 'msg msg-err';
+      msg.textContent = '❌ License is bound to a different machine. Your Machine ID: ' + currentMid;
+      return;
+    }
+  }
+
+  localStorage.setItem('active_license', JSON.stringify(found));
+  activeLicense = found;
+  settings.clubName = businessName;
+  saveSettings();
+  msg.className = 'msg msg-ok';
+  msg.textContent = '✅ Activated! ' + daysLeft + ' days remaining';
+  setTimeout(showLogin, 1200);
 }
 
 function startTrial() {
@@ -1081,7 +1459,7 @@ function startTrial() {
   if (!businessName) { msg.className = 'msg msg-err'; msg.textContent = '❌ Enter Business Name first'; return; }
   try {
     var expires = new Date(); expires.setDate(expires.getDate() + 14);
-    var lic = { key: 'TRIAL-' + Date.now(), businessName: businessName, issued: new Date().toISOString(), expires: expires.toISOString(), price: 0, currency: 'KSH', type: 'trial' };
+    var lic = { key: 'TRIAL-' + Date.now(), businessName: businessName, issued: new Date().toISOString(), expires: expires.toISOString(), price: 0, currency: 'KSH', type: 'trial', autoRenew: false };
     localStorage.setItem('active_license', JSON.stringify(lic));
     activeLicense = lic;
     settings.clubName = businessName;
@@ -1108,43 +1486,55 @@ function showRenewalPrompt(forceShow) {
     var title = isExpired ? '⚠️ License Expired' : '⏰ License Expiring Soon';
     var message = isExpired ? 'Your license has EXPIRED. Renew now to continue using the POS.\n\n' : 'Your license expires in ' + daysLeft + ' day' + (daysLeft !== 1 ? 's' : '') + '.\n\n';
     message += 'Renew for KSH 10,000/year with the SAME details?\n\nBusiness: ' + lic.businessName + '\nContact:  ' + (lic.contactPerson || 'N/A') + '\nPhone:    ' + (lic.contactPhone || 'N/A') + '\nEmail:    ' + (lic.contactEmail || 'N/A');
-    if (!confirm(title + '\n\n' + message)) return false;
-    var changeDetails = confirm('Do you want to CHANGE the business details?\n\n✅ OK — Update the details\n❌ Cancel — Renew with the SAME details');
-    if (changeDetails) {
-      var newBusiness = prompt('Business / Club Name:', lic.businessName);
-      if (!newBusiness) { toast('Renewal cancelled — no name entered', true, 'err'); return false; }
-      var newContact = prompt('Contact Person:', lic.contactPerson || '');
-      if (newContact === null) return false;
-      var newPhone = prompt('Contact Phone:', lic.contactPhone || '');
-      if (newPhone === null) return false;
-      var newEmail = prompt('Contact Email:', lic.contactEmail || '');
-      if (newEmail === null) return false;
-      lic.businessName = newBusiness.trim().toUpperCase();
-      lic.contactPerson = newContact.trim();
-      lic.contactPhone = newPhone.trim();
-      lic.contactEmail = newEmail.trim();
-    }
-    var currentExpiry = new Date(lic.expires);
-    var now = new Date();
-    var baseDate = currentExpiry > now ? currentExpiry : now;
-    var newExpiry = new Date(baseDate);
-    newExpiry.setDate(newExpiry.getDate() + 365);
-    lic.expires = newExpiry.toISOString();
-    lic.renewedAt = new Date().toISOString();
-    lic.type = 'paid';
-    lic.price = 10000;
-    localStorage.setItem('active_license', JSON.stringify(lic));
-    activeLicense = lic;
-    settings.clubName = lic.businessName;
-    saveSettings();
-    if (document.getElementById('brandName')) document.getElementById('brandName').innerHTML = lic.businessName + ' <span>POS</span>';
-    if (document.getElementById('ribbonClubName')) document.getElementById('ribbonClubName').textContent = lic.businessName;
-    if (document.getElementById('loginWelcomeMsg')) document.getElementById('loginWelcomeMsg').textContent = 'Sign in to ' + lic.businessName;
-    toast('✅ License renewed! New expiry: ' + newExpiry.toLocaleDateString(), false, 'ok');
-    if (typeof updateRenewalBanner === 'function') updateRenewalBanner();
-    if (typeof updateLicenseStatusBanner === 'function') updateLicenseStatusBanner();
-    if (typeof updateRibbon === 'function') updateRibbon();
-    setTimeout(function() { location.reload(); }, 1800);
+
+    customPrompt(title + '\n\n' + message + '\n\nType YES to renew, or anything else to cancel:', 'YES', function(confirmResult) {
+      if (!confirmResult || confirmResult.trim().toUpperCase() !== 'YES') return;
+
+      customPrompt('Change business details? Type YES to edit, NO to keep same:', 'NO', function(editDetails) {
+        function doRenew(newBusiness, newContact, newPhone, newEmail) {
+          var currentExpiry = new Date(lic.expires);
+          var now = new Date();
+          var baseDate = currentExpiry > now ? currentExpiry : now;
+          var newExpiry = new Date(baseDate);
+          newExpiry.setDate(newExpiry.getDate() + 365);
+          if (newBusiness) lic.businessName = newBusiness.trim().toUpperCase();
+          if (newContact) lic.contactPerson = newContact.trim();
+          if (newPhone) lic.contactPhone = newPhone.trim();
+          if (newEmail) lic.contactEmail = newEmail.trim();
+          lic.expires = newExpiry.toISOString();
+          lic.renewedAt = new Date().toISOString();
+          lic.type = 'paid';
+          lic.price = 10000;
+          localStorage.setItem('active_license', JSON.stringify(lic));
+          activeLicense = lic;
+          settings.clubName = lic.businessName;
+          saveSettings();
+          if (document.getElementById('brandName')) document.getElementById('brandName').innerHTML = lic.businessName + ' <span>POS</span>';
+          if (document.getElementById('ribbonClubName')) document.getElementById('ribbonClubName').textContent = lic.businessName;
+          toast('✅ License renewed! New expiry: ' + newExpiry.toLocaleDateString(), false, 'ok');
+          if (typeof updateRenewalBanner === 'function') updateRenewalBanner();
+          if (typeof updateLicenseStatusBanner === 'function') updateLicenseStatusBanner();
+          if (typeof refreshLicenseInfoCard === 'function') refreshLicenseInfoCard();
+          if (typeof updateRibbon === 'function') updateRibbon();
+          setTimeout(function() { location.reload(); }, 1800);
+        }
+
+        if (editDetails && editDetails.trim().toUpperCase() === 'YES') {
+          customPrompt('New Business / Club Name:', lic.businessName, function(newBusiness) {
+            if (!newBusiness) return;
+            customPrompt('New Contact Person:', lic.contactPerson || '', function(newContact) {
+              customPrompt('New Contact Phone:', lic.contactPhone || '', function(newPhone) {
+                customPrompt('New Contact Email:', lic.contactEmail || '', function(newEmail) {
+                  doRenew(newBusiness, newContact, newPhone, newEmail);
+                });
+              });
+            });
+          });
+        } else {
+          doRenew(null, null, null, null);
+        }
+      });
+    });
     return true;
   } catch(e) { console.error('Renewal error:', e); toast('Renewal failed: ' + e.message, true, 'err'); return false; }
 }
@@ -1188,25 +1578,60 @@ function generateLicense() {
   var contactEmail = document.getElementById('genContactEmail').value.trim();
   var years = parseInt(document.getElementById('genLicenseDuration').value) || 1;
   if (!businessName) { toast('Business name required', true, 'err'); return; }
+
+  var customerMachineId = (window._pendingMachineId || '').trim().toUpperCase();
+  window._pendingMachineId = '';
+
   var key = generateLicenseKey(businessName);
   var issued = new Date();
   var expires = new Date();
   expires.setDate(expires.getDate() + (365 * years));
+
+  // FIX #6 — discount tiers applied to price
+  var priceMap = { 1: 10000, 2: 19000, 3: 28500, 4: 38000, 5: 47000 };
+  var price = priceMap[years] || (LICENSE_PRICE_PER_YEAR * years);
+
   var lic = {
     key: key, businessName: businessName,
     contactPerson: contactPerson, contactPhone: contactPhone, contactEmail: contactEmail,
     issued: issued.toISOString(), expires: expires.toISOString(),
-    years: years, price: LICENSE_PRICE_PER_YEAR * years, currency: 'KSH',
-    type: 'paid', revoked: false,
+    years: years, price: price, currency: 'KSH',
+    type: 'paid', revoked: false, autoRenew: false,
+    machineId: customerMachineId || '',
     generatedBy: currentUser ? currentUser.name : 'System'
   };
   licenses.push(lic);
   localStorage.setItem('pub_licenses', JSON.stringify(licenses));
   document.getElementById('newLicenseKey').textContent = key;
   document.getElementById('generatedKeyDisplay').style.display = 'block';
+
+  var midInfo = document.createElement('div');
+  midInfo.style.cssText = 'margin-top:12px; font-size:11px; color:var(--text-muted);';
+  midInfo.innerHTML = lic.machineId
+    ? '🔒 Bound to Machine: <strong style="color:var(--orange);">' + lic.machineId + '</strong>'
+    : '🌐 Unbound license (works on any machine)';
+  var keyDisplay = document.getElementById('generatedKeyDisplay');
+  var oldInfo = keyDisplay.querySelector('.mid-info');
+  if (oldInfo) oldInfo.remove();
+  midInfo.className = 'mid-info';
+  keyDisplay.appendChild(midInfo);
+
   loadLicensesTable();
   updateLicenseStats();
-  toast('💰 License generated · KSH ' + (LICENSE_PRICE_PER_YEAR * years).toLocaleString(), false, 'ok');
+  toast('💰 License generated · KSH ' + price.toLocaleString() + ' · ' + years + ' yr' +
+    (lic.machineId ? ' · Bound to ' + lic.machineId : ' · Unbound'), false, 'ok');
+}
+
+// FIX #2 — newline between } and function copyMachineId()
+function copyMachineId() {
+  var el = document.getElementById('settingsMachineId');
+  if (!el || !el.textContent || el.textContent === '---') {
+    toast('Machine ID not available', true, 'err');
+    return;
+  }
+  navigator.clipboard.writeText(el.textContent).then(function() {
+    toast('📋 Machine ID copied', false, 'ok');
+  });
 }
 
 function copyGeneratedKey() {
@@ -1230,7 +1655,11 @@ function loadLicensesTable() {
     var statusClass = lic.revoked ? 'badge-red' : (daysLeft <= 0 ? 'badge-red' : (daysLeft <= 30 ? 'badge-gold' : 'badge-green'));
     html += '<tr>';
     html += '<td><code style="color:var(--orange); font-weight:700;">' + lic.key + '</code></td>';
-    html += '<td><strong>' + lic.businessName + '</strong></td>';
+    html += '<td><strong>' + lic.businessName + '</strong>' +
+      (lic.machineId
+        ? '<div style="font-size:10px; color:var(--text-muted); font-family:monospace; margin-top:2px;">🔒 ' + lic.machineId + '</div>'
+        : '<div style="font-size:10px; color:var(--text-muted); margin-top:2px;">🌐 Unbound</div>') +
+      '</td>';
     html += '<td>' + new Date(lic.issued).toLocaleDateString() + '</td>';
     html += '<td>' + new Date(lic.expires).toLocaleDateString() + '</td>';
     html += '<td><span class="badge ' + (daysLeft <= 30 ? 'badge-red' : 'badge-green') + '">' + (daysLeft > 0 ? daysLeft + 'd' : 'Expired') + '</span></td>';
@@ -1327,6 +1756,117 @@ function toggleServiceCharge() {
   toast('Service charge ' + (serviceChargeEnabled ? 'enabled' : 'disabled'), false, serviceChargeEnabled ? 'ok' : 'info');
 }
 
+/* ============ FIX #4 + #5 + #7 — AUTO-RENEW + LICENSE INFO CARD ============ */
+function refreshLicenseInfoCard() {
+  var bizEl = document.getElementById('licInfoBusiness');
+  var expEl = document.getElementById('licInfoExpiry');
+  var dayEl = document.getElementById('licInfoDays');
+  var tog = document.getElementById('licAutoRenewToggle');
+  var lbl = document.getElementById('licAutoRenewLabel');
+  if (!bizEl) return;
+
+  if (!activeLicense) {
+    bizEl.value = '— No active license —';
+    expEl.value = '—';
+    dayEl.value = '—';
+    if (tog) tog.classList.remove('on');
+    if (lbl) { lbl.textContent = 'OFF'; lbl.style.color = 'var(--text-muted)'; }
+    return;
+  }
+  var days = getDaysLeft(activeLicense.expires);
+  bizEl.value = activeLicense.businessName || '—';
+  expEl.value = new Date(activeLicense.expires).toLocaleDateString();
+  dayEl.value = days > 0 ? days + ' days' : 'EXPIRED';
+  dayEl.style.color = days <= 0 ? 'var(--red)' : (days <= 30 ? 'var(--gold)' : 'var(--green)');
+
+  if (tog) tog.classList.toggle('on', !!activeLicense.autoRenew);
+  if (lbl) {
+    lbl.textContent = activeLicense.autoRenew ? 'ON' : 'OFF';
+    lbl.style.color = activeLicense.autoRenew ? 'var(--green)' : 'var(--text-muted)';
+  }
+}
+
+function toggleAutoRenew() {
+  if (!activeLicense) { toast('No active license', true, 'err'); return; }
+  if (!currentUser || currentUser.role !== 'superadmin') {
+    toast('🚫 Only the system owner can change auto-renew', true, 'err'); return;
+  }
+  activeLicense.autoRenew = !activeLicense.autoRenew;
+  localStorage.setItem('active_license', JSON.stringify(activeLicense));
+  refreshLicenseInfoCard();
+  toast('Auto-renew ' + (activeLicense.autoRenew ? 'ENABLED ✅' : 'DISABLED'), false,
+        activeLicense.autoRenew ? 'ok' : 'info');
+}
+
+function renewLicenseNow() {
+  if (!activeLicense) { toast('No active license to renew', true, 'err'); return; }
+  if (!currentUser || currentUser.role !== 'superadmin') {
+    toast('🚫 Only the system owner can renew', true, 'err'); return;
+  }
+  var lic = activeLicense;
+  var base = new Date(lic.expires) > new Date() ? new Date(lic.expires) : new Date();
+  var newExpiry = new Date(base);
+  newExpiry.setDate(newExpiry.getDate() + 365);
+  lic.expires = newExpiry.toISOString();
+  lic.renewedAt = new Date().toISOString();
+  lic.price = 10000;
+  lic.type = 'paid';
+  localStorage.setItem('active_license', JSON.stringify(lic));
+  activeLicense = lic;
+  refreshLicenseInfoCard();
+  if (typeof updateRenewalBanner === 'function') updateRenewalBanner();
+  if (typeof updateLicenseStatusBanner === 'function') updateLicenseStatusBanner();
+  if (typeof updateRibbon === 'function') updateRibbon();
+  toast('✅ License renewed · new expiry ' + newExpiry.toLocaleDateString(), false, 'ok');
+}
+
+function requestRenewalInAdvance() {
+  if (!activeLicense) { toast('No active license', true, 'err'); return; }
+  var lic = activeLicense;
+  var days = getDaysLeft(lic.expires);
+  var msg =
+    'Renewal request for:\n\n' +
+    'Business: ' + lic.businessName + '\n' +
+    'Expires:  ' + new Date(lic.expires).toLocaleDateString() + '\n' +
+    'Days left: ' + days + '\n\n' +
+    'Send this to amrakzos@gmail.com / +254 143 831 387?\n\n' +
+    'Type YES to confirm the request.';
+  customPrompt(msg, 'YES', function(ans) {
+    if (!ans || ans.trim().toUpperCase() !== 'YES') return;
+    var requests = JSON.parse(localStorage.getItem('pub_renewal_requests') || '[]');
+    requests.push({
+      id: Date.now(),
+      businessName: lic.businessName,
+      key: lic.key,
+      expires: lic.expires,
+      daysLeft: days,
+      requestedBy: currentUser ? currentUser.name : 'Unknown',
+      requestedAt: new Date().toISOString(),
+      status: 'pending'
+    });
+    localStorage.setItem('pub_renewal_requests', JSON.stringify(requests));
+    toast('📨 Renewal request logged — support will contact you', false, 'ok');
+  });
+}
+
+/* FIX #5 — AUTO-RENEW BACKGROUND WATCHER */
+(function autoRenewWatcher() {
+  setInterval(function () {
+    if (!activeLicense || !activeLicense.autoRenew) return;
+    if (getDaysLeft(activeLicense.expires) > 0) return;
+    var newExpiry = new Date();
+    newExpiry.setDate(newExpiry.getDate() + 365);
+    activeLicense.expires = newExpiry.toISOString();
+    activeLicense.renewedAt = new Date().toISOString();
+    activeLicense.lastAutoRenew = true;
+    localStorage.setItem('active_license', JSON.stringify(activeLicense));
+    refreshLicenseInfoCard();
+    if (typeof updateRenewalBanner === 'function') updateRenewalBanner();
+    if (typeof updateRibbon === 'function') updateRibbon();
+    toast('🔄 Auto-renewed · new expiry ' + newExpiry.toLocaleDateString(), false, 'ok');
+  }, 60 * 1000);
+})();
+
 function loadSettings() {
   var saved = localStorage.getItem('pub_settings');
   if (saved) { try { settings = Object.assign(settings, JSON.parse(saved)); } catch(e) {} }
@@ -1338,6 +1878,7 @@ function loadSettings() {
   var sp = document.getElementById('servicePercentLabel'); if (sp) sp.textContent = settings.serviceCharge;
   updateServiceToggleUI();
   if (typeof updateRenewalBanner === 'function') updateRenewalBanner();
+  if (typeof refreshLicenseInfoCard === 'function') refreshLicenseInfoCard();
 }
 
 function saveSettings() {
@@ -1398,16 +1939,37 @@ function updateRibbon() {
   } catch(e) {}
 }
 
-function showLicense() { document.getElementById('licenseScreen').style.display = 'flex'; document.getElementById('loginScreen').style.display = 'none'; document.getElementById('app').style.display = 'none'; }
-function showLogin() { document.getElementById('licenseScreen').style.display = 'none'; document.getElementById('loginScreen').style.display = 'flex'; document.getElementById('app').style.display = 'none'; }
-function showApp() { document.getElementById('licenseScreen').style.display = 'none'; document.getElementById('loginScreen').style.display = 'none'; document.getElementById('app').style.display = 'flex'; }
+function showLicense() {
+  document.getElementById('licenseScreen').style.display = 'flex';
+  document.getElementById('loginScreen').style.display = 'none';
+  document.getElementById('app').style.display = 'none';
+  // Electron/Chromium hit-testing fix
+  void document.body.offsetHeight;
+}
+
+function showLogin() {
+  document.getElementById('licenseScreen').style.display = 'none';
+  document.getElementById('loginScreen').style.display = 'flex';
+  document.getElementById('app').style.display = 'none';
+  // Electron/Chromium hit-testing fix
+  void document.body.offsetHeight;
+  if (users.length === 0) showSetupModal();
+}
+
+function showApp() {
+  document.getElementById('licenseScreen').style.display = 'none';
+  document.getElementById('loginScreen').style.display = 'none';
+  document.getElementById('app').style.display = 'flex';
+  // Electron/Chromium hit-testing fix
+  void document.body.offsetHeight;
+}
 
 function doLogin() {
   var u = document.getElementById('loginUser').value.trim();
   var p = document.getElementById('loginPass').value;
   var msg = document.getElementById('loginMsg');
   var found = null;
-  if (u === SUPER_ADMIN.username && p === SUPER_ADMIN.password) {
+  if (SUPER_ADMIN && u === SUPER_ADMIN.username && p === SUPER_ADMIN.password) {
     found = Object.assign({}, SUPER_ADMIN);
     found.lastLogin = new Date().toISOString();
   } else {
@@ -1433,6 +1995,7 @@ function doLogin() {
     initDashboard(); loadUsersTable(); loadHeldTabs(); loadRooms();
     loadLicensesTable(); updateLicenseStats(); updateLicenseStatusBanner();
     updateLicenseButtons();
+    refreshLicenseInfoCard();
     updateRibbon();
     if (found.role === 'cashier') switchTab('pos', {target: document.querySelectorAll('.tab-btn[data-tab="pos"]')[0]});
     if (found.isSuperAdmin) toast('👑 Superadmin access granted', false, 'info');
@@ -1440,7 +2003,75 @@ function doLogin() {
   } else { msg.className = 'msg msg-err'; msg.textContent = '❌ Invalid credentials'; }
 }
 
-function logout() { if (confirm('Logout?')) { currentUser = null; cart = []; showLogin(); } }
+function logout() {
+  if (!confirm('Logout?')) return;
+
+  currentUser = null;
+  cart = [];
+  pendingPayment = null;
+  currentReceiptOrder = null;
+  window._activeRoomTabId = null;
+  currentCategory = 'all';
+  currentTab = 'pos';
+
+  var userEl = document.getElementById('loginUser');
+  var passEl = document.getElementById('loginPass');
+  var msgEl = document.getElementById('loginMsg');
+  if (userEl) userEl.value = '';
+  if (passEl) passEl.value = '';
+  if (msgEl) { msgEl.textContent = ''; msgEl.className = 'msg'; }
+
+  var userInfo = document.getElementById('userInfo');
+  var userAvatar = document.getElementById('userAvatar');
+  var userRoleTag = document.getElementById('userRoleTag');
+  if (userInfo) userInfo.textContent = '';
+  if (userAvatar) userAvatar.textContent = '';
+  if (userRoleTag) { userRoleTag.textContent = ''; userRoleTag.className = 'role-tag'; }
+
+  ['payModal', 'receiptModal', 'userModal', 'roomModal', 'roomDetailModal',
+   'generateLicenseModal', 'importModal', 'setupModal', 'customPromptModal', 'machineIdPromptModal'].forEach(function(id) {
+    var el = document.getElementById(id);
+    if (el) el.classList.remove('active');
+  });
+
+  ['dlProgress', 'roomTabBanner'].forEach(function(id) {
+    var el = document.getElementById(id);
+    if (el) el.remove();
+  });
+
+  var cartItems = document.getElementById('cartItems');
+  if (cartItems) cartItems.innerHTML = '<div class="empty-cart"><div class="icon">🛒</div><div>No items in tab</div></div>';
+  var cartBadge = document.getElementById('cartBadge');
+  if (cartBadge) cartBadge.textContent = '0';
+
+  var subtotal = document.getElementById('subtotal');
+  var service = document.getElementById('service');
+  var total = document.getElementById('total');
+  if (subtotal) subtotal.textContent = settings.currency + ' 0.00';
+  if (service) service.textContent = settings.currency + ' 0.00';
+  if (total) total.textContent = settings.currency + ' 0.00';
+
+  var midEl = document.getElementById('machineIdDisplay');
+  if (midEl && window.posAPI && window.posAPI.getMachineId) {
+    midEl.textContent = window.posAPI.getMachineId();
+  }
+
+   showLogin();
+
+  // Electron/Chromium fix: force reflow so hit-testing layer updates
+  void document.body.offsetHeight;
+  void document.getElementById('loginScreen').offsetHeight;
+
+  // Defer focus until AFTER the browser has painted the new layout
+  requestAnimationFrame(function() {
+    requestAnimationFrame(function() {
+      var u = document.getElementById('loginUser');
+      if (u) { u.value = ''; u.focus(); u.select(); }
+      var p = document.getElementById('loginPass');
+      if (p) p.value = '';
+    });
+  });
+}
 
 function switchTab(tab, evt) {
   var permMap = {
@@ -1462,17 +2093,21 @@ function switchTab(tab, evt) {
   if (tab === 'tabs') loadHeldTabs();
   if (tab === 'rooms') loadRooms();
   if (tab === 'license') { loadLicensesTable(); updateLicenseStats(); updateLicenseStatusBanner(); updateLicenseButtons(); }
-  if (tab === 'settings') { loadSettings(); updateRenewalBanner(); updateLicenseButtons(); }
+  if (tab === 'settings') { loadSettings(); updateRenewalBanner(); updateLicenseButtons(); refreshLicenseInfoCard(); }
 }
 
 function openStockManager() {
   if (!can('stock.view')) { toast('Access denied', true, 'err'); return; }
+  if (window.posAPI && window.posAPI.openStockManager) {
+    window.posAPI.openStockManager();
+    toast('📦 Stock Manager opened', false, 'info');
+    return;
+  }
   const fullPath = window.location.href.replace('index.html', 'stock.html');
-  window.open(fullPath, 'StockManager', 'width=1300,height=850,menubar=no,toolbar=no,location=no,status=no');
-  toast('📦 Stock Manager opened', false, 'info');
+  window.open(fullPath, 'StockManager', 'width=1300,height=850,menubar=no,toolbar=no');
+  toast('📦 Stock Manager opened (browser mode)', false, 'info');
 }
 
-// POS RENDERING
 function renderQuickPicks() {
   var box = document.getElementById('quickPicks');
   var html = '';
@@ -1575,7 +2210,7 @@ function getTotal() {
   return sub + (serviceChargeEnabled ? sub * (settings.serviceCharge / 100) : 0);
 }
 
-// ROOMS
+/* ============ ROOMS (chunk 3 continues) ============ */
 function loadRooms() {
   if (!can('rooms.view')) return;
   var grid = document.getElementById('roomsGrid');
@@ -1758,18 +2393,35 @@ function setRoomStatus(id, newStatus) {
   }
   if (newStatus === 'available' && r.status === 'reserved') { r.guestName = ''; r.reservedAt = ''; }
   if (newStatus === 'occupied' && r.status !== 'occupied') {
-    var name = prompt('Guest name for Room ' + r.number + ':', r.guestName || '');
-    if (!name) return;
-    var count = parseInt(prompt('Number of guests:', r.guestCount || '1')) || 1;
-    r.guestName = name; r.guestCount = count;
-    r.checkIn = new Date().toISOString();
-    r.items = r.items || [];
+    customPrompt('Guest name for Room ' + r.number + ':', r.guestName || '', function(name) {
+      if (!name) return;
+      customPrompt('Number of guests:', String(r.guestCount || 1), function(countStr) {
+        var count = parseInt(countStr) || 1;
+        r.guestName = name; r.guestCount = count;
+        r.checkIn = new Date().toISOString();
+        r.items = r.items || [];
+        r.status = newStatus;
+        localStorage.setItem('pub_rooms', JSON.stringify(rooms));
+        loadRooms();
+        openRoomDetail(id);
+        toast('✅ Room ' + r.number + ' → ' + newStatus.toUpperCase(), false, 'ok');
+      });
+    });
+    return;
   }
   if (newStatus === 'reserved') {
-    var name = prompt('Reserve Room ' + r.number + ' for (guest name):', r.guestName || '');
-    if (!name) return;
-    var arrival = prompt('Expected arrival (e.g., "Tomorrow 6 PM"):', r.reservedAt || '');
-    r.guestName = name; r.reservedAt = arrival || '';
+    customPrompt('Reserve Room ' + r.number + ' for (guest name):', r.guestName || '', function(name2) {
+      if (!name2) return;
+      customPrompt('Expected arrival (e.g., "Tomorrow 6 PM"):', r.reservedAt || '', function(arrival) {
+        r.guestName = name2; r.reservedAt = arrival || '';
+        r.status = newStatus;
+        localStorage.setItem('pub_rooms', JSON.stringify(rooms));
+        loadRooms();
+        openRoomDetail(id);
+        toast('✅ Room ' + r.number + ' → ' + newStatus.toUpperCase(), false, 'ok');
+      });
+    });
+    return;
   }
   r.status = newStatus;
   localStorage.setItem('pub_rooms', JSON.stringify(rooms));
@@ -1838,17 +2490,20 @@ function closeRoomTab() {
 function checkInGuest(id) {
   var r = rooms.find(function(x) { return x.id === id; });
   if (!r) return;
-  var name = prompt('Guest name:', r.guestName || '');
-  if (!name) return;
-  var count = parseInt(prompt('Number of guests:', r.guestCount || '1')) || 1;
-  r.guestName = name; r.guestCount = count;
-  r.status = 'occupied';
-  r.checkIn = new Date().toISOString();
-  r.items = r.items || [];
-  localStorage.setItem('pub_rooms', JSON.stringify(rooms));
-  closeRoomDetail();
-  loadRooms();
-  toast('🟢 Guest checked in to Room ' + r.number, false, 'ok');
+  customPrompt('Guest name:', r.guestName || '', function(name) {
+    if (!name) return;
+    customPrompt('Number of guests:', String(r.guestCount || 1), function(countStr) {
+      var count = parseInt(countStr) || 1;
+      r.guestName = name; r.guestCount = count;
+      r.status = 'occupied';
+      r.checkIn = new Date().toISOString();
+      r.items = r.items || [];
+      localStorage.setItem('pub_rooms', JSON.stringify(rooms));
+      closeRoomDetail();
+      loadRooms();
+      toast('🟢 Guest checked in to Room ' + r.number, false, 'ok');
+    });
+  });
 }
 
 function checkOutGuest(id) {
@@ -1965,7 +2620,6 @@ function printRoomReceiptThermal(order) {
   toast('🖨️ Room receipt printed', false, 'ok');
 }
 
-// PAYMENT
 function openPay(method) {
   if (!can('pos.view')) { toast('Access denied', true, 'err'); return; }
   if (cart.length === 0) { toast('Tab empty', true, 'err'); return; }
@@ -2064,9 +2718,9 @@ function confirmPay() {
     if (amount !== parseFloat(total.toFixed(2))) { toast('Amount must be ' + total.toFixed(2), true, 'err'); return; }
     completeOrder({ mpesa: { amount: amount, phone: phone, ref: ref } });
   } else if (pendingPayment === 'cash') {
-    var amount = parseFloat((document.getElementById('payAmount') || {}).value) || 0;
-    if (amount < total) { toast('Short by ' + settings.currency + ' ' + (total - amount).toFixed(2), true, 'err'); return; }
-    completeOrder({ cash: { amount: amount, change: amount - total } });
+    var amount2 = parseFloat((document.getElementById('payAmount') || {}).value) || 0;
+    if (amount2 < total) { toast('Short by ' + settings.currency + ' ' + (total - amount2).toFixed(2), true, 'err'); return; }
+    completeOrder({ cash: { amount: amount2, change: amount2 - total } });
   } else if (pendingPayment === 'split') {
     var m = parseFloat((document.getElementById('splitMpesa') || {}).value) || 0;
     var c = parseFloat((document.getElementById('splitCash') || {}).value) || 0;
@@ -2270,7 +2924,6 @@ function testPrint() {
   toast('🖨️ Test print sent', false, 'ok');
 }
 
-// DASHBOARD
 function initDashboard() {
   if (!can('dashboard.view')) return;
   try {
@@ -2306,7 +2959,6 @@ function initDashboard() {
 function refreshDashboard() { if (!can('dashboard.view')) { toast('Access denied', true, 'err'); return; } initDashboard(); toast('Refreshed', false, 'ok'); }
 function exportDashboard() { if (!can('dashboard.view')) { toast('Access denied', true, 'err'); return; } var data = { generated: new Date().toISOString(), orders: JSON.parse(localStorage.getItem('pub_orders') || '[]'), users: users, products: products, rooms: rooms, settings: settings }; downloadJSON(data, 'dashboard-export.json'); }
 
-// USERS
 function loadUsersTable() {
   if (!can('users.view')) return;
   var tbody = document.getElementById('usersTableBody');
@@ -2362,7 +3014,6 @@ function saveUser() {
   if (!username || !name || !password) { toast('All fields required', true, 'err'); return; }
   if (id && parseInt(id) < 0) { toast('🚫 This account is protected', true, 'err'); return; }
   if (currentUser.role === 'manager' && role === 'admin') { toast('🚫 Managers cannot create admin users', true, 'err'); return; }
-  if (username.toLowerCase() === 'superadmin') { toast('🚫 That username is reserved', true, 'err'); return; }
   if (id) {
     if (!can('users.edit')) { toast('Access denied', true, 'err'); return; }
     for (var i = 0; i < users.length; i++) {
@@ -2401,16 +3052,43 @@ function closeUserModal() { document.getElementById('userModal').classList.remov
 function exportUsers() { if (!can('users.view')) { toast('Access denied', true, 'err'); return; } downloadJSON(users, 'users-export.json'); }
 function importUsers() { if (!can('users.create')) { toast('Access denied', true, 'err'); return; } document.getElementById('importText').value = ''; document.getElementById('importModal').classList.add('active'); }
 function closeImportModal() { document.getElementById('importModal').classList.remove('active'); }
+
 function doImport() {
-  if (!can('users.create')) { toast('Access denied', true, 'err'); return; }
-  try {
-    var data = JSON.parse(document.getElementById('importText').value);
-    if (Array.isArray(data)) { users = data; localStorage.setItem('pub_users', JSON.stringify(users)); loadUsersTable(); closeImportModal(); toast('Users imported', false, 'ok'); }
-    else toast('Invalid JSON', true, 'err');
-  } catch(e) { toast('Invalid JSON', true, 'err'); }
+  if (!can('settings.edit') && !can('users.create')) { toast('Access denied', true, 'err'); return; }
+  var raw = document.getElementById('importText').value.trim();
+  if (!raw) { toast('Paste backup JSON first', true, 'err'); return; }
+  try { var data = JSON.parse(raw); }
+  catch(e) { toast('❌ Invalid JSON: ' + e.message, true, 'err'); return; }
+
+  if (data && typeof data === 'object' && !Array.isArray(data) &&
+      (data.products || data.users || data.orders || data.rooms || data.licenses)) {
+    var restored = [];
+    if (Array.isArray(data.products)) { products = data.products; localStorage.setItem('pub_products', JSON.stringify(products)); restored.push('products'); }
+    if (Array.isArray(data.users)) { users = data.users; localStorage.setItem('pub_users', JSON.stringify(users)); restored.push('users'); }
+    if (Array.isArray(data.orders)) { localStorage.setItem('pub_orders', JSON.stringify(data.orders)); restored.push('orders'); }
+    if (Array.isArray(data.rooms)) { rooms = data.rooms; localStorage.setItem('pub_rooms', JSON.stringify(rooms)); restored.push('rooms'); }
+    if (Array.isArray(data.heldTabs)) { heldTabs = data.heldTabs; localStorage.setItem('pub_held_tabs', JSON.stringify(heldTabs)); restored.push('heldTabs'); }
+    if (Array.isArray(data.licenses)) { licenses = data.licenses; localStorage.setItem('pub_licenses', JSON.stringify(licenses)); restored.push('licenses'); }
+    if (data.settings && typeof data.settings === 'object') { settings = Object.assign(settings, data.settings); localStorage.setItem('pub_settings', JSON.stringify(settings)); restored.push('settings'); }
+    if (data.reconciliation && typeof data.reconciliation === 'object') { localStorage.setItem('pub_reconciliation', JSON.stringify(data.reconciliation)); restored.push('reconciliation'); }
+    if (restored.length === 0) { toast('⚠️ Backup had no recognized data', true, 'err'); return; }
+    closeImportModal();
+    toast('✅ Restored: ' + restored.join(', '), false, 'ok');
+    setTimeout(function() { location.reload(); }, 1500);
+    return;
+  }
+
+  if (Array.isArray(data)) {
+    users = data;
+    localStorage.setItem('pub_users', JSON.stringify(users));
+    loadUsersTable();
+    closeImportModal();
+    toast('✅ Users imported', false, 'ok');
+    return;
+  }
+  toast('❌ Unrecognized backup format', true, 'err');
 }
 
-// REPORTS
 function generateReport(type) {
   if (!can('reports.view')) return;
   var orders = JSON.parse(localStorage.getItem('pub_orders') || '[]');
@@ -2440,7 +3118,6 @@ function generateReport(type) {
 
 function exportReport() { if (!can('reports.export')) { toast('Access denied', true, 'err'); return; } var orders = JSON.parse(localStorage.getItem('pub_orders') || '[]'); downloadJSON(orders, 'reports-export.json'); }
 
-// ============ RECONCILIATION ============
 function loadReconciliation() {
   if (!can('reconciliation.view')) { toast('Access denied', true, 'err'); return; }
   var dateEl = document.getElementById('reconDate');
@@ -2699,15 +3376,15 @@ function exportReconciliation() {
   downloadJSON({ date: dateKey, orders: dayOrders, reconciliation: dayRecon }, 'reconciliation-' + dateKey + '.json');
 }
 
-// HELD TABS
 function holdTab() {
   if (cart.length === 0) { toast('Tab empty', true, 'err'); return; }
-  var name = prompt('Customer name:', 'Customer ' + (heldTabs.length + 1));
-  if (!name) return;
-  heldTabs.push({ id: Date.now(), customer: name, items: cart.slice(), total: getTotal(), heldAt: new Date().toLocaleString(), heldBy: currentUser.name, heldById: currentUser.id, heldByRole: currentUser.role, cashier: currentUser.name });
-  localStorage.setItem('pub_held_tabs', JSON.stringify(heldTabs));
-  cart = []; renderCart(); loadHeldTabs();
-  toast('📌 Tab held by ' + currentUser.name, false, 'info');
+  customPrompt('Customer name:', 'Customer ' + (heldTabs.length + 1), function(name) {
+    if (!name) return;
+    heldTabs.push({ id: Date.now(), customer: name, items: cart.slice(), total: getTotal(), heldAt: new Date().toLocaleString(), heldBy: currentUser.name, heldById: currentUser.id, heldByRole: currentUser.role, cashier: currentUser.name });
+    localStorage.setItem('pub_held_tabs', JSON.stringify(heldTabs));
+    cart = []; renderCart(); loadHeldTabs();
+    toast('📌 Tab held by ' + currentUser.name, false, 'info');
+  });
 }
 
 function recallTab() {
@@ -2763,7 +3440,8 @@ function loadHeldTabs() {
   tbody.innerHTML = html;
 }
 
-// DATA HELPERS
+function downloadJSON(data, filename) {
+}
 function downloadJSON(data, filename) {
   var blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
   var url = URL.createObjectURL(blob);
@@ -2775,13 +3453,26 @@ function downloadJSON(data, filename) {
 
 function exportAllData() {
   if (!can('settings.view')) { toast('Access denied', true, 'err'); return; }
-  var all = { products: products, users: users, orders: JSON.parse(localStorage.getItem('pub_orders') || '[]'), heldTabs: heldTabs, licenses: licenses, rooms: rooms, settings: settings, reconciliation: JSON.parse(localStorage.getItem('pub_reconciliation') || '{}'), exportedAt: new Date().toISOString() };
+  var all = {
+    products: products,
+    users: users,
+    orders: JSON.parse(localStorage.getItem('pub_orders') || '[]'),
+    heldTabs: heldTabs,
+    licenses: licenses,
+    rooms: rooms,
+    settings: settings,
+    reconciliation: JSON.parse(localStorage.getItem('pub_reconciliation') || '{}'),
+    renewalRequests: JSON.parse(localStorage.getItem('pub_renewal_requests') || '[]'),
+    activeLicense: activeLicense,
+    exportedAt: new Date().toISOString()
+  };
   downloadJSON(all, 'bar-pos-full-backup.json');
 }
 
 function importAllData() {
   if (!can('settings.edit')) { toast('Access denied', true, 'err'); return; }
-  document.getElementById('importText').value = ''; document.getElementById('importModal').classList.add('active');
+  document.getElementById('importText').value = '';
+  document.getElementById('importModal').classList.add('active');
 }
 
 function resetAllData() {
@@ -2806,7 +3497,11 @@ document.addEventListener('keydown', function(e) {
   if (e.key === 'F3') { e.preventDefault(); if (currentTab === 'pos') openPay('split'); }
   if (e.key === 'F4') { e.preventDefault(); if (currentTab === 'pos') holdTab(); }
   if (e.key === 'F9') { e.preventDefault(); if (can('serviceCharge.toggle')) toggleServiceCharge(); }
-  if (e.key === 'Escape') { closePay(); closeReceipt(); closeUserModal(); closeImportModal(); closeGenerateLicenseModal(); closeRoomModal(); closeRoomDetail(); }
+  if (e.key === 'Escape') {
+    closePay(); closeReceipt(); closeUserModal(); closeImportModal();
+    closeGenerateLicenseModal(); closeRoomModal(); closeRoomDetail();
+    cancelCustomPrompt(); cancelMachineIdPrompt();
+  }
 });
 
 window.addEventListener('storage', function(e) {
@@ -2818,6 +3513,10 @@ window.addEventListener('storage', function(e) {
   if (e.key === 'pub_rooms') {
     rooms = JSON.parse(e.newValue || '[]');
     if (currentTab === 'rooms') loadRooms();
+  }
+  if (e.key === 'active_license') {
+    activeLicense = JSON.parse(e.newValue || 'null');
+    refreshLicenseInfoCard();
   }
 });
 </script>
